@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     int port = atoi(argv[2]);
     int backlog = atoi(argv[3]);
     int sock = socket(PF_INET, SOCK_STREAM, 0);
-    assert(sock > = 0);
+    assert(sock >= 0);
     /*创建一个IPv4 socket地址*/
     struct sockaddr_in address;
     bzero(&address, sizeof(address));
