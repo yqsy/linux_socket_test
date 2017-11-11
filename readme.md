@@ -13,4 +13,5 @@
 g++ check_byte_order.cpp -o check_byte_order
 g++ back_log.cpp -o back_log
 g++ dup_cgi.cpp -o dup_cgi
+g++ test_signal.cpp -o test_signal -std=c++11 -lpthread
 ```
