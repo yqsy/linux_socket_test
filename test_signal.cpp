@@ -23,11 +23,7 @@ int main()
         std::cout << "can't catch SIGINT\n";
     }
 
-    while (1)
-    {
-        sleep(1);
-    }
-
-
+    sleep(1000);
+    
     return 0;
 }
