@@ -97,17 +97,23 @@ int main(int argc, char *argv[])
     int epollfd = epoll_create(5);
     assert(epollfd != -1);
     addfd(epollfd, listenfd);
+
+    // 创建管道 接收14 15,并发送给epoll的pipefd[0]
+    // 目的是为了让epoll来处理事件,因为不能直接中断主线程啊,是吧
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, pipefd);
     assert(ret != -1);
-    setnonblocking(pipefd[1]);
-    addfd(epollfd, pipefd[0]);
-    /*设置信号处理函数*/
+    setnonblocking(pipefd[1]); // 管道[1]用来接收 14 时钟 15 退出 信号
+    addfd(epollfd, pipefd[0]); // 管道[0]绑定在epoll上
     addsig(SIGALRM);
     addsig(SIGTERM);
+
     bool stop_server = false;
     client_data *users = new client_data[FD_LIMIT];
     bool timeout = false;
-    alarm(TIMESLOT); /*定时*/
+
+    // 定时间向本程序发送信号
+    alarm(TIMESLOT);
+
     while (!stop_server)
     {
         int number = epoll_wait(epollfd, events, MAX_EVENT_NUMBER, -1);
@@ -212,10 +218,6 @@ int main(int argc, char *argv[])
                         timer_lst.adjust_timer(timer);
                     }
                 }
-            }
-            else
-            {
-                //others
             }
         }
         /*最后处理定时事件，因为I/O事件有更高的优先级。当然，这样做将导致定时任务不能精确地按照预期的时间执行*/
