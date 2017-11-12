@@ -1,205 +1,233 @@
+#include "list_timer.h"
+
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <assert.h>
 #include <stdio.h>
-#include <cstddef>
-#include <time.h>
+#include <signal.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/epoll.h>
+#include <pthread.h>
 
-#define BUFFER_SIZE 64
-class util_timer; /*前向声明*/
+#define FD_LIMIT 65535
+#define MAX_EVENT_NUMBER 1024
+#define TIMESLOT 5
+static int pipefd[2];
 
-/*用户数据结构：客户端socket地址、socket文件描述符、读缓存和定时器*/
-struct client_data
-{
-    sockaddr_in address;
-    int sockfd;
-    char buf[BUFFER_SIZE];
-    util_timer *timer;
-};
-/*定时器类*/
-class util_timer
-{
-  public:
-    util_timer() : prev(NULL), next(NULL) {}
+/*利用代码清单11-2中的升序链表来管理定时器*/
+static sort_timer_lst timer_lst;
+static int epollfd = 0;
 
-  public:
-    time_t expire;                  /*任务的超时时间，这里使用绝对时间*/
-    void (*cb_func)(client_data *); /*任务回调函数*/
-    /*回调函数处理的客户数据，由定时器的执行者传递给回调函数*/
-    client_data *user_data;
-    util_timer *prev; /*指向前一个定时器*/
-    util_timer *next; /*指向下一个定时器*/
-};
-/*定时器链表。它是一个升序、双向链表，且带有头结点和尾节点*/
-class sort_timer_lst
+int setnonblocking(int fd)
 {
-  public:
-    sort_timer_lst() : head(NULL), tail(NULL) {}
-    /*链表被销毁时，删除其中所有的定时器*/
-    ~sort_timer_lst()
+    int old_option = fcntl(fd, F_GETFL);
+    int new_option = old_option | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_option);
+    return old_option;
+}
+void addfd(int epollfd, int fd)
+{
+    epoll_event event;
+    event.data.fd = fd;
+    event.events = EPOLLIN | EPOLLET;
+    epoll_ctl(epollfd, EPOLL_CTL_ADD, fd, &event);
+    setnonblocking(fd);
+}
+void sig_handler(int sig)
+{
+    int save_errno = errno;
+    int msg = sig;
+    send(pipefd[1], (char *)&msg, 1, 0);
+    errno = save_errno;
+}
+void addsig(int sig)
+{
+    struct sigaction sa;
+    memset(&sa, '\0', sizeof(sa));
+    sa.sa_handler = sig_handler;
+    sa.sa_flags |= SA_RESTART;
+    sigfillset(&sa.sa_mask);
+    assert(sigaction(sig, &sa, NULL) != -1);
+}
+
+void timer_handler()
+{
+    /*定时处理任务，实际上就是调用tick函数*/
+    timer_lst.tick();
+    /*因为一次alarm调用只会引起一次SIGALRM信号，所以我们要重新定时，以不断触发SIGALRM信号*/
+    alarm(TIMESLOT);
+}
+/*定时器回调函数，它删除非活动连接socket上的注册事件，并关闭之*/
+void cb_func(client_data *user_data)
+{
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, user_data -> sockfd, 0);
+    assert(user_data);
+    close(user_data -> sockfd);
+    printf("close fd%d\n", user_data -> sockfd);
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc <= 2)
     {
-        util_timer *tmp = head;
-        while (tmp)
-        {
-            head = tmp->next;
-            delete tmp;
-            tmp = head;
-        }
+        printf("usage:%s ip_address port_number\n", basename(argv[0]));
+        return 1;
     }
-    /*将目标定时器timer添加到链表中*/
-    void add_timer(util_timer *timer)
+    const char *ip = argv[1];
+    int port = atoi(argv[2]);
+    int ret = 0;
+    struct sockaddr_in address;
+    bzero(&address, sizeof(address));
+    address.sin_family = AF_INET;
+    inet_pton(AF_INET, ip, &address.sin_addr);
+    address.sin_port = htons(port);
+    int listenfd = socket(PF_INET, SOCK_STREAM, 0);
+    assert(listenfd >= 0);
+    ret = bind(listenfd, (struct sockaddr *)&address, sizeof(address));
+    assert(ret != -1);
+    ret = listen(listenfd, 5);
+    assert(ret != -1);
+    epoll_event events[MAX_EVENT_NUMBER];
+    int epollfd = epoll_create(5);
+    assert(epollfd != -1);
+    addfd(epollfd, listenfd);
+    ret = socketpair(PF_UNIX, SOCK_STREAM, 0, pipefd);
+    assert(ret != -1);
+    setnonblocking(pipefd[1]);
+    addfd(epollfd, pipefd[0]);
+    /*设置信号处理函数*/
+    addsig(SIGALRM);
+    addsig(SIGTERM);
+    bool stop_server = false;
+    client_data *users = new client_data[FD_LIMIT];
+    bool timeout = false;
+    alarm(TIMESLOT); /*定时*/
+    while (!stop_server)
     {
-        if (!timer)
+        int number = epoll_wait(epollfd, events, MAX_EVENT_NUMBER, -1);
+        if ((number < 0) && (errno != EINTR))
         {
-            return;
+            printf("epoll failure\n");
+            break;
         }
-        if (!head)
+        for (int i = 0; i < number; i++)
         {
-            head = tail = timer;
-            return;
-        }
-        /*如果目标定时器的超时时间小于当前链表中所有定时器的超时时间，则把该定时器插入链表头部，作为链表新的头节点。否则就需要调用重载函数add_timer(util_timer*timer,util_timer*lst_head)，把它插入链表中合适的位置，以保证链表的升序特性*/
-        if (timer->expire < head->expire)
-        {
-            timer->next = head;
-            head->prev = timer;
-            head = timer;
-            return;
-        }
-        add_timer(timer, head);
-    }
-    /*当某个定时任务发生变化时，调整对应的定时器在链表中的位置。这个函数只考虑被调整的定时器的超时时间延长的情况，即该定时器需要往链表的尾部移动*/
-    void adjust_timer(util_timer *timer)
-    {
-        if (!timer)
-        {
-            return;
-        }
-        util_timer *tmp = timer->next;
-        /*如果被调整的目标定时器处在链表尾部，或者该定时器新的超时值仍然小于其下一个定时器的超时值，则不用调整*/
-        if (!tmp || (timer->expire < tmp->expire))
-        {
-            return;
-        }
-        /*如果目标定时器是链表的头节点，则将该定时器从链表中取出并重新插入链表*/
-        if (timer == head)
-        {
-            head = head->next;
-            head->prev = NULL;
-            timer->next = NULL;
-            add_timer(timer, head);
-        }
-        /*如果目标定时器不是链表的头节点，则将该定时器从链表中取出，然后插入其原来所在位置之后的部分链表中*/
-        else
-        {
-            timer->prev->next = timer->next;
-            timer->next->prev = timer->prev;
-            add_timer(timer, timer->next);
-        }
-    }
-    /*将目标定时器timer从链表中删除*/
-    void del_timer(util_timer *timer)
-    {
-        if (!timer)
-        {
-            return;
-        }
-        /*下面这个条件成立表示链表中只有一个定时器，即目标定时器*/
-        if ((timer == head) &&(timer == tail))
-        {
-            delete timer;
-            head = NULL;
-            tail = NULL;
-            return;
-        }
-        /*如果链表中至少有两个定时器，且目标定时器是链表的头结点，则将链表的头结点重置为原头节点的下一个节点，然后删除目标定时器*/
-        if (timer == head)
-        {
-            head = head->next;
-            head->prev = NULL;
-            delete timer;
-            return;
-        }
-        /*如果链表中至少有两个定时器，且目标定时器是链表的尾结点，则将链表的尾结点重置为原尾节点的前一个节点，然后删除目标定时器*/
-        if (timer == tail)
-        {
-            tail = tail->prev;
-            tail->next = NULL;
-            delete timer;
-            return;
-        }
-        /*如果目标定时器位于链表的中间，则把它前后的定时器串联起来，然后删除目标定时器*/
-        timer->prev->next = timer->next;
-        timer->next->prev = timer->prev;
-        delete timer;
-    }
-    /*SIGALRM信号每次被触发就在其信号处理函数（如果使用统一事件源，则是主函数）中执行一次tick函数，以处理链表上到期的任务*/
-    void tick()
-    {
-        if (!head)
-        {
-            return;
-        }
-        printf("timer tick\n");
-        time_t cur = time(NULL); /*获得系统当前的时间*/
-        util_timer *tmp = head;
-        /*从头结点开始依次处理每个定时器，直到遇到一个尚未到期的定时器，这就是定时器的核心逻辑*/
-        while (tmp)
-        {
-            /*因为每个定时器都使用绝对时间作为超时值，所以我们可以把定时器的超时值和系统当前时间，比较以判断定时器是否到期*/
-            if (cur < tmp->expire)
+            int sockfd = events[i].data.fd;
+            /*处理新到的客户连接*/
+            if (sockfd == listenfd)
             {
-                break;
+                struct sockaddr_in client_address;
+                socklen_t client_addrlength = sizeof(client_address);
+                int connfd = accept(listenfd, (struct sockaddr *)&client_address, &client_addrlength);
+                addfd(epollfd, connfd);
+                users[connfd].address = client_address;
+                users[connfd].sockfd = connfd;
+                /*创建定时器，设置其回调函数与超时时间，然后绑定定时器与用户数据，最后将定时器添加到链表timer_lst中*/
+                util_timer *timer = new util_timer;
+                timer -> user_data = &users[connfd];
+                timer -> cb_func = cb_func;
+                time_t cur = time(NULL);
+                timer -> expire = cur + 3 * TIMESLOT;
+                users[connfd].timer = timer;
+                timer_lst.add_timer(timer);
             }
-            /*调用定时器的回调函数，以执行定时任务*/
-            tmp->cb_func(tmp->user_data);
-            /*执行完定时器中的定时任务之后，就将它从链表中删除，并重置链表头结点*/
-            head = tmp->next;
-            if (head)
+            /*处理信号*/
+            else if ((sockfd == pipefd[0]) && (events[i].events & EPOLLIN))
             {
-                head->prev = NULL;
+                int sig;
+                char signals[1024];
+                ret = recv(pipefd[0], signals, sizeof(signals), 0);
+                if (ret == -1)
+                {
+                    //handle the error
+                    continue;
+                }
+                else if (ret == 0)
+                {
+                    continue;
+                }
+                else
+                {
+                    for (int i = 0; i < ret; ++i)
+                    {
+                        switch (signals[i])
+                        {
+                        case SIGALRM:
+                        {
+                            /*用timeout变量标记有定时任务需要处理，但不立即处理定时任务。这是因为定时任务的优先级不是很高，我们优先处理其他更重要的任务*/
+                            timeout = true;
+                            break;
+                        }
+                        case SIGTERM:
+                        {
+                            stop_server = true;
+                        }
+                        }
+                    }
+                }
             }
-            delete tmp;
-            tmp = head;
+            /*处理客户连接上接收到的数据*/
+            else if (events[i].events & EPOLLIN)
+            {
+                memset(users[sockfd].buf, '\0', BUFFER_SIZE);
+                ret = recv(sockfd, users[sockfd].buf, BUFFER_SIZE - 1, 0);
+                printf("get%d bytes of client data%s from%d\n", ret,
+                       users[sockfd].buf, sockfd);
+                util_timer *timer = users[sockfd].timer;
+                if (ret < 0)
+                {
+                    /*如果发生读错误，则关闭连接，并移除其对应的定时器*/
+                    if (errno != EAGAIN)
+                    {
+                        cb_func(&users[sockfd]);
+                        if (timer)
+                        {
+                            timer_lst.del_timer(timer);
+                        }
+                    }
+                }
+                else if (ret == 0)
+                {
+                    /*如果对方已经关闭连接，则我们也关闭连接，并移除对应的定时器*/
+                    cb_func(&users[sockfd]);
+                    if (timer)
+                    {
+                        timer_lst.del_timer(timer);
+                    }
+                }
+                else
+                {
+                    /*如果某个客户连接上有数据可读，则我们要调整该连接对应的定时器，以延迟该连接被关闭的时间*/
+                    if (timer)
+                    {
+                        time_t cur = time(NULL);
+                        timer -> expire = cur + 3 * TIMESLOT;
+                        printf("adjust timer once\n");
+                        timer_lst.adjust_timer(timer);
+                    }
+                }
+            }
+            else
+            {
+                //others
+            }
+        }
+        /*最后处理定时事件，因为I/O事件有更高的优先级。当然，这样做将导致定时任务不能精确地按照预期的时间执行*/
+        if (timeout)
+        {
+            timer_handler();
+            timeout = false;
         }
     }
-
-  private:
-    /*一个重载的辅助函数，它被公有的add_timer函数和adjust_timer函数调用。该函数表示将目标定时器timer添加到节点lst_head之后的部分链表中*/
-    void add_timer(util_timer *timer, util_timer *lst_head)
-    {
-        util_timer *prev = lst_head;
-        util_timer *tmp = prev->next;
-        /*遍历lst_head节点之后的部分链表，直到找到一个超时时间大于目标定时器的超时时间的节点，并将目标定时器插入该节点之前*/
-        while (tmp)
-        {
-            if (timer->expire < tmp->expire)
-            {
-                prev->next = timer;
-                timer->next = tmp;
-                tmp->prev = timer;
-                timer->prev = prev;
-                break;
-            }
-            prev = tmp;
-            tmp = tmp->next;
-        }
-        /*如果遍历完lst_head节点之后的部分链表，仍未找到超时时间大于目标定时器的超时时间的节点，则将目标定时器插入链表尾部，并把它设置为链表新的尾节点*/
-        if (!tmp)
-        {
-            prev->next = timer;
-            timer->prev = prev;
-            timer->next = NULL;
-            tail = timer;
-        }
-    }
-
-  private:
-    util_timer *head;
-    util_timer *tail;
-};
-
-
-int main()
-{
+    close(listenfd);
+    close(pipefd[1]);
+    close(pipefd[0]);
+    delete[] users;
     return 0;
 }
