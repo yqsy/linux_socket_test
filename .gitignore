@@ -39,3 +39,4 @@
 /.idea
 /cmake-build-debug
 /.vscode
+/sync.sh

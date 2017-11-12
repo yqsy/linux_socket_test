@@ -11,6 +11,7 @@ void sig_hanadler(int singo)
     if (singo == SIGINT)
     {
         std::cout << "recv SIGINT and thread id: " << std::this_thread::get_id() << std::endl;
+        exit(0);
     }
 }
 
@@ -24,6 +25,6 @@ int main()
     }
 
     sleep(1000);
-    
+
     return 0;
 }
