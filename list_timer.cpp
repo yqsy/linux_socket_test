@@ -66,10 +66,10 @@ void timer_handler()
 /*定时器回调函数，它删除非活动连接socket上的注册事件，并关闭之*/
 void cb_func(client_data *user_data)
 {
-    epoll_ctl(epollfd, EPOLL_CTL_DEL, user_data -> sockfd, 0);
+    epoll_ctl(epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
     assert(user_data);
-    close(user_data -> sockfd);
-    printf("close fd%d\n", user_data -> sockfd);
+    close(user_data->sockfd);
+    printf("close fd%d\n", user_data->sockfd);
 }
 
 int main(int argc, char *argv[])
@@ -130,10 +130,10 @@ int main(int argc, char *argv[])
                 users[connfd].sockfd = connfd;
                 /*创建定时器，设置其回调函数与超时时间，然后绑定定时器与用户数据，最后将定时器添加到链表timer_lst中*/
                 util_timer *timer = new util_timer;
-                timer -> user_data = &users[connfd];
-                timer -> cb_func = cb_func;
+                timer->user_data = &users[connfd];
+                timer->cb_func = cb_func;
                 time_t cur = time(NULL);
-                timer -> expire = cur + 3 * TIMESLOT;
+                timer->expire = cur + 3 * TIMESLOT;
                 users[connfd].timer = timer;
                 timer_lst.add_timer(timer);
             }
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
                     if (timer)
                     {
                         time_t cur = time(NULL);
-                        timer -> expire = cur + 3 * TIMESLOT;
+                        timer->expire = cur + 3 * TIMESLOT;
                         printf("adjust timer once\n");
                         timer_lst.adjust_timer(timer);
                     }
