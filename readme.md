@@ -2,7 +2,7 @@
 <!-- TOC -->
 
 - [1. 编译](#1-编译)
-- [调试](#调试)
+- [2. 调试](#2-调试)
 
 <!-- /TOC -->
 
@@ -18,11 +18,12 @@ g++ test_signal.cpp -o test_signal -std=c++11 -lpthread
 g++ timer_singal_test.cpp -o timer_singal_test -std=c++11 -lpthread
 g++ list_timer.cpp -g -o list_timer
 
-g++ hello_world.cpp -g -levent -o hello_world
+g++ hello_world.cpp -g -levent -o hello_world\
+g++ low_level_rot13_server.cpp -g -levent -o low_level_rot13_server
 ```
 
-<a id="markdown-调试" name="调试"></a>
-# 调试
+<a id="markdown-2-调试" name="2-调试"></a>
+# 2. 调试
 ```
 cgdb list_timer 
 b main
