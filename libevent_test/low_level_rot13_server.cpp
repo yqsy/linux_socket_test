@@ -80,11 +80,13 @@ void do_read(evutil_socket_t fd, short events, void* arg) {
         
         for (int i = 0; i < result; ++i) {
             if (state->buffer_used < sizeof(state->buffer)) {
+                // buffer_used 当前已经使用了的字节数等于下一个元素的下标值
                 state->buffer[state->buffer_used++] = rot13_char(buf[i]);
             }
 
             if (buf[i] == '\n') {
                 event_add(state->write_event, NULL);
+                // 需要一次性发送的字节数
                 state->write_upto = state->buffer_used;
             }
         }
@@ -104,8 +106,10 @@ void do_read(evutil_socket_t fd, short events, void* arg) {
 void do_write(evutil_socket_t fd, short events, void* arg) {
     fd_state* state = (fd_state*)arg;
 
+    // 循环到 写入字节数 == 一次性发送的字节数 为止
     while (state->n_written < state->write_upto) {
-        ssize_t result = send(fd, state->buffer + state->n_written,
+        
+        ssize_t result = send(fd, state->buffer + state->n_written/*下一发送字节的index*/,
                               state->write_upto - state->n_written, 0);
 
         if (result < 0) {
@@ -119,9 +123,11 @@ void do_write(evutil_socket_t fd, short events, void* arg) {
 
         state->n_written += result;
     }
-
+    
+    assert(state->n_written == state->buffer_used);
     if (state->n_written == state->buffer_used) {
-        state->n_written = state->write_upto = state->buffer_used = 1;
+        // state->n_written = state->write_upto = state->buffer_used = 1; 这里为什么是1?
+        state->n_written = state->write_upto = state->buffer_used = 0;
     }
     event_del(state->write_event);
 }
@@ -180,10 +186,8 @@ void run() {
 }
 
 int main(int argc, char* argv[]) {
-    
     setvbuf(stdout, NULL, _IONBF, 0);
 
     run();
-
     return 0;
 }
