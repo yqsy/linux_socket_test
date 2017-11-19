@@ -24,6 +24,8 @@ g++ create_zombine_process.cpp -g -o create_zombine_process
 g++ deadlock.cpp -g -lpthread -o deadlock
 g++ half_sync_half_async.cpp -g -o half_sync_half_async
 
+g++ timer_test.cpp -g -lev -o timer_test
+
 g++ hello_world.cpp -g -levent -o hello_world
 g++ low_level_rot13_server.cpp -g -levent -o low_level_rot13_server
 g++ simper_rot13_server.cpp -g -levent -o simper_rot13_server
