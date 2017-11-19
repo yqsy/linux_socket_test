@@ -21,6 +21,7 @@ g++ timer_singal_test.cpp -o timer_singal_test -std=c++11 -lpthread
 g++ list_timer.cpp -g -o list_timer
 g++ fork_test.cpp -g -o fork_test
 g++ create_zombine_process.cpp -g -o create_zombine_process
+g++ deadlock.cpp -g -lpthread -o deadlock
 
 g++ hello_world.cpp -g -levent -o hello_world
 g++ low_level_rot13_server.cpp -g -levent -o low_level_rot13_server

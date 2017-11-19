@@ -11,6 +11,7 @@
 static bool stop = false;
 /*SIGTERM信号的处理函数，触发时结束主程序中的循环*/
 static void handle_term(int sig) { stop = true; }
+
 int main(int argc, char *argv[]) {
   signal(SIGTERM, handle_term);
   if (argc <= 3) {
