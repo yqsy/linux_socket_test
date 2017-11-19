@@ -22,6 +22,7 @@ g++ list_timer.cpp -g -o list_timer
 g++ fork_test.cpp -g -o fork_test
 g++ create_zombine_process.cpp -g -o create_zombine_process
 g++ deadlock.cpp -g -lpthread -o deadlock
+g++ half_sync_half_async.cpp -g -o half_sync_half_async
 
 g++ hello_world.cpp -g -levent -o hello_world
 g++ low_level_rot13_server.cpp -g -levent -o low_level_rot13_server
