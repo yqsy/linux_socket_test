@@ -41,6 +41,9 @@ kill $(jobs -p)
 cgdb list_timer 
 b main
 r 0.0.0.0 3000
+
+gdb --tui ./ttcp_test --args ./ttcp_test -t --host 1.1
+
 ```
 
 <a id="markdown-3-测试rot13" name="3-测试rot13"></a>
