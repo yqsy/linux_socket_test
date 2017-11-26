@@ -3,6 +3,7 @@
 #include <netinet/tcp.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -51,50 +52,73 @@ int get_listen_fd(uint16_t port) {
   return fd;
 }
 
+// get_kernel_recv_buffer_size
+static size_t gkrbs(int fd) {
+  int krbs = 0;
+  ioctl(fd, FIONREAD, &krbs);
+  return krbs;
+}
+
 static void client_cb(EV_P_ ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
+  auto &session_message = ev_client->session_message;
 
-  struct SessionMessage session_message = {0, 0};
-  int rb = read_n(ev_client->fd, &session_message, sizeof(session_message));
-  assert(rb = sizeof(session_message));
+  size_t rb = 0;
 
-  session_message.number = ntohl(session_message.number);
-  session_message.length = ntohl(session_message.length);
-  printf("receive number = %d\nreceived length = %d\n", session_message.number,
-         session_message.length);
+  while (gkrbs(ev_client->fd) >= sizeof(int32_t)) {
+    if (session_message.number == 0 && session_message.length == 0) {
+      if (gkrbs(ev_client->fd) >= sizeof(SessionMessage)) {
+        rb = read(ev_client->fd, (char *)&session_message,
+                  sizeof(session_message));
+        assert(rb == sizeof(session_message));
+        session_message.number = ntohl(session_message.number);
+        session_message.length = ntohl(session_message.length);
 
-  assert(session_message.length <= MAX_RECEIVE_LENGTH);
+        assert(ev_client->buffer == NULL);
+        ev_client->buffer =
+            (char *)malloc(session_message.length + sizeof(int32_t));
+        ev_client->ack = session_message.length;
+      } else {
+        break;
+      }
+    } else {
+      const size_t total_len = sizeof(int32_t) + size_t(session_message.length);
+      int32_t length = 0;
+      rb = recv(ev_client->fd, (char *)&length, sizeof(length), MSG_PEEK);
+      assert(rb == sizeof(int32_t));
 
-  const int total_len = int(sizeof(int32_t) + session_message.length);
-  PayloadMessage *payload = (PayloadMessage *)malloc(total_len);
-  assert(payload);
+      length = ntohl(length);
+      assert(length == session_message.length);
 
-  for (int i = 0; i < session_message.number; ++i) {
-    payload->length = 0;
+      if (gkrbs(ev_client->fd) >= total_len) {
+        assert(ev_client->buffer != NULL);
+        rb = read(ev_client->fd, ev_client->buffer, total_len);
+        assert(rb == total_len);
 
-    rb = read_n(ev_client->fd, &payload->length, sizeof(payload->length));
-    assert(rb == sizeof(payload->length));
+        // FIXME: send return?
+        if (write(ev_client->fd, &ev_client->ack, sizeof(ev_client->ack)) !=
+            sizeof(ev_client->ack)) {
+          perror("write");
+          exit(0);
+        }
 
-    payload->length = ntohl(payload->length);
-    assert(payload->length == session_message.length);
+        ++ev_client->count;
+        if (ev_client->count >= session_message.number) {
+          close(ev_client->fd);
+          free(ev_client->buffer);
+          // FIXME: O(n)
+          auto &ev_clients = ev_client->ev_server->ev_clients;
+          for (auto iter = ev_clients.begin(); iter != ev_clients.end();
+               ++iter) {
+            if (&**iter == ev_client) {
+              ev_clients.erase(iter);
+            }
+          }
+        }
 
-    rb = read_n(ev_client->fd, payload->data, payload->length);
-    assert(rb == payload->length);
-
-    int32_t ack = htonl(payload->length);
-
-    int wb = write_n(ev_client->fd, &ack, sizeof(ack));
-    assert(wb == sizeof(ack));
-  }
-
-  free(payload);
-  close(ev_client->fd);
-
-  // FIXME: O(n)
-  auto &ev_clients = ev_client->ev_server->ev_clients;
-  for (auto iter = ev_clients.begin(); iter != ev_clients.end(); ++iter) {
-    if (&**iter == ev_client) {
-      ev_clients.erase(iter);
+      } else {
+        break;
+      }
     }
   }
 }
@@ -103,6 +127,8 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
   printf("server fd become readable\n");
 
   EvClientPtr ev_client = std::make_shared<EvClient>();
+  ev_client->session_message.number = 0;
+  ev_client->session_message.length = 0;
 
   EvServer *ev_server = (EvServer *)w;
   assert(ev_server->fd >= 0);
