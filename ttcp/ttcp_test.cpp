@@ -132,6 +132,8 @@ void transmit() {
 
   printf("connected\n");
 
+  auto start = std::chrono::high_resolution_clock::now();
+
   struct SessionMessage session_message = {0, 0};
   session_message.number = ntohl(BUFFER_NUMBER);
   session_message.length = ntohl(BUFFER_LENGTH);
@@ -155,18 +157,24 @@ void transmit() {
   double total_mb = 1.0 * BUFFER_LENGTH * BUFFER_NUMBER / 1024 / 1024;
   printf("%.3f MiB in total\n", total_mb);
 
-  for (int i - 0; i < BUFFER_NUMBER; ++i) {
+  for (int i = 0; i < BUFFER_NUMBER; ++i) {
     int nw = write_n(sockfd, payload, total_len);
     assert(nw == total_len);
 
     int ack = 0;
     int nr = read_n(sockfd, &ack, sizeof(ack));
     assert(nr == sizeof(ack));
-    ack = ntohl(ack == BUFFER_LENGTH);
+    ack = ntohl(ack);
+    assert(ack == BUFFER_LENGTH);
   }
 
   free(payload);
   close(sockfd);
+
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elasped_seconds = (end - start);
+  printf("%.3f seconds\n%.3f Mib/s\n", elasped_seconds,
+         total_mb / elasped_seconds.count());
 }
 
 void receive() {
