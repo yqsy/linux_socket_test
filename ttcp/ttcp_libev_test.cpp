@@ -76,7 +76,7 @@ static void client_cb(EV_P_ ev_io *w, int revents) {
 
         assert(ev_client->buffer == NULL);
         const int total_len = int(sizeof(int32_t) + session_message.length);
-        ev_client->buffer = (char *)malloc(total_len);
+        ev_client->buffer = new char[total_len];
         bzero(ev_client->buffer, total_len);
         ev_client->ack = session_message.length;
       } else {
@@ -106,7 +106,7 @@ static void client_cb(EV_P_ ev_io *w, int revents) {
         ++ev_client->count;
         if (ev_client->count >= session_message.number) {
           close(ev_client->fd);
-          free(ev_client->buffer);
+          delete (ev_client->buffer);
           // FIXME: O(n)
           auto &ev_clients = ev_client->ev_server->ev_clients;
           for (auto iter = ev_clients.begin(); iter != ev_clients.end();
@@ -133,6 +133,7 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
 
   EvServer *ev_server = (EvServer *)w;
   assert(ev_server->fd >= 0);
+  ev_server->ev_clients.push_back(ev_client);
 
   ev_client->fd = accept(ev_server->fd, NULL, NULL);
   assert(ev_client->fd >= 0);
