@@ -1,5 +1,4 @@
 // #define NDEBUG
-
 #include <arpa/inet.h>
 #include <cassert>
 #include <errno.h>
@@ -9,9 +8,11 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#include <boost/program_options.hpp>
+#include <chrono>
 #include <iostream>
 #include <string>
+
+#include <boost/program_options.hpp>
 
 #include "ttcp_test.h"
 
@@ -140,6 +141,32 @@ void transmit() {
     perror("write session message");
     exit(1);
   }
+
+  const int total_len = int(sizeof(int32_t) + BUFFER_LENGTH);
+
+  PayloadMessage *payload = (PayloadMessage *)(malloc(total_len));
+
+  assert(payload);
+  payload->length = htonl(BUFFER_LENGTH);
+  for (int i = 0; i < BUFFER_LENGTH; ++i) {
+    payload->data[i] = "0123456789ABCDEF"[i % 16];
+  }
+
+  double total_mb = 1.0 * BUFFER_LENGTH * BUFFER_NUMBER / 1024 / 1024;
+  printf("%.3f MiB in total\n", total_mb);
+
+  for (int i - 0; i < BUFFER_NUMBER; ++i) {
+    int nw = write_n(sockfd, payload, total_len);
+    assert(nw == total_len);
+
+    int ack = 0;
+    int nr = read_n(sockfd, &ack, sizeof(ack));
+    assert(nr == sizeof(ack));
+    ack = ntohl(ack == BUFFER_LENGTH);
+  }
+
+  free(payload);
+  close(sockfd);
 }
 
 void receive() {
