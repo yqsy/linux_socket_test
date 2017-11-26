@@ -17,7 +17,6 @@
 #include "common.h"
 #include "ttcp_test.h"
 
-
 namespace po = boost::program_options;
 
 uint16_t PORT;
