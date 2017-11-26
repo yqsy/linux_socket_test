@@ -2,10 +2,11 @@
 <!-- TOC -->
 
 - [1. 编译](#1-编译)
-- [2. 测试ttcp](#2-测试ttcp)
-- [3. 调试](#3-调试)
-- [4. 测试rot13](#4-测试rot13)
-- [5. rot13抓包](#5-rot13抓包)
+- [2. 相关库](#2-相关库)
+- [3. 测试ttcp](#3-测试ttcp)
+- [4. 调试](#4-调试)
+- [5. 测试rot13](#5-测试rot13)
+- [6. rot13抓包](#6-rot13抓包)
 
 <!-- /TOC -->
 
@@ -34,15 +35,22 @@ g++ simper_rot13_server.cpp -g -levent -o simper_rot13_server
 g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 ```
 
-<a id="markdown-2-测试ttcp" name="2-测试ttcp"></a>
-# 2. 测试ttcp
+<a id="markdown-2-相关库" name="2-相关库"></a>
+# 2. 相关库
+* https://cmake.org/cmake/help/v3.0/module/FindBoost.html
+
+<a id="markdown-3-测试ttcp" name="3-测试ttcp"></a>
+# 3. 测试ttcp
 ```
 
+while true; do ./ttcp_test --recv --port 5000; done
+
+./ttcp_test --trans --port 5000 --length 65536 --number 8192
 
 ```
 
-<a id="markdown-3-调试" name="3-调试"></a>
-# 3. 调试
+<a id="markdown-4-调试" name="4-调试"></a>
+# 4. 调试
 ```
 > /dev/null 2>&1 &
 kill $(jobs -p)
@@ -54,8 +62,8 @@ gdb --tui ./ttcp_test --args ./ttcp_test -t --host 1.1
 
 ```
 
-<a id="markdown-4-测试rot13" name="4-测试rot13"></a>
-# 4. 测试rot13
+<a id="markdown-5-测试rot13" name="5-测试rot13"></a>
+# 5. 测试rot13
 ```
 tcpdump -XX -i lo port 40713
 tcpdump -i lo port 40713
@@ -69,8 +77,8 @@ printf '123456' | nc 127.0.0.1 40713
 ```
 
 
-<a id="markdown-5-rot13抓包" name="5-rot13抓包"></a>
-# 5. rot13抓包
+<a id="markdown-6-rot13抓包" name="6-rot13抓包"></a>
+# 6. rot13抓包
 ```
 # printf '123456\n' | nc 127.0.0.1 40713
 

@@ -173,7 +173,7 @@ void transmit() {
 
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elasped_seconds = (end - start);
-  printf("%.3f seconds\n%.3f Mib/s\n", elasped_seconds,
+  printf("%.3f seconds\n%.3f Mib/s\n", elasped_seconds.count(),
          total_mb / elasped_seconds.count());
 }
 
