@@ -1,13 +1,18 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include <ev.h>
 
+#include <cassert>
 #include <memory>
 #include <vector>
+
+#include "ttcp_libev_test.h"
 
 uint16_t PORT = 5002;
 
@@ -43,8 +48,40 @@ int get_listen_fd(uint16_t port) {
   return fd;
 }
 
-int main() {
-  int listenfd = get_listen_fd(PORT);
+static void client_cb(EV_P_ ev_io *w, int revents) {
+  EvClient *ev_client = (EvClient *)w;
+}
 
+static void server_cb(EV_P_ ev_io *w, int revents) {
+  printf("server fd become readable\n");
+
+  EvClientPtr ev_client = EvClientPtr();
+
+  EvServer *ev_server = (EvServer *)w;
+  assert(ev_server->fd >= 0);
+
+  ev_client->fd = accept(ev_server->fd, NULL, NULL);
+  assert(ev_client->fd >= 0);
+
+  int rtn = setnonblock(ev_client->fd);
+  assert(rtn != -1);
+
+  ev_io_init(&ev_client->io, client_cb, ev_client->fd, EV_READ);
+}
+
+int main() {
+  EV_P = ev_default_loop(0);
+
+  EvServer server;
+
+  server.fd = get_listen_fd(PORT);
+  ev_io_init(&server.io, server_cb, server.fd, EV_READ);
+  ev_io_start(EV_A_ & server.io);
+
+  printf("listening on port = %d, looping\n", PORT);
+
+  ev_loop(EV_A_ 0);
+
+  close(server.fd);
   return 0;
 }

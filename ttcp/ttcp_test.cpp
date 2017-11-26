@@ -14,7 +14,9 @@
 
 #include <boost/program_options.hpp>
 
+#include "common.h"
 #include "ttcp_test.h"
+
 
 namespace po = boost::program_options;
 
@@ -79,38 +81,6 @@ static sockaddr_in resolve_or_die(const char *host, uint16_t port) {
   addr.sin_port = htons(port);
   addr.sin_addr = *(in_addr *)he->h_addr;
   return addr;
-}
-
-static int write_n(int sockfd, const void *buf, int length) {
-  int written = 0;
-  while (written < length) {
-    ssize_t nw = write(sockfd, (const char *)buf + written, length - written);
-    if (nw > 0) {
-      written += int(nw);
-    } else if (nw == 0) {
-      break; // EOF
-    } else if (errno != EINTR) {
-      perror("write");
-      break;
-    }
-  }
-  return written;
-}
-
-static int read_n(int sockfd, void *buf, int length) {
-  int nread = 0;
-  while (nread < length) {
-    ssize_t nr = read(sockfd, (char *)buf + nread, length - nread);
-    if (nr > 0) {
-      nread += (int)nr;
-    } else if (nr == 0) {
-      break; // EOF
-    } else if (errno != EINTR) {
-      perror("read");
-      break;
-    }
-  }
-  return nread;
 }
 
 void transmit() {

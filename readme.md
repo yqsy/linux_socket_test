@@ -2,11 +2,12 @@
 <!-- TOC -->
 
 - [1. 编译](#1-编译)
-- [2. 相关库](#2-相关库)
-- [3. 测试ttcp](#3-测试ttcp)
-- [4. 调试](#4-调试)
-- [5. 测试rot13](#5-测试rot13)
-- [6. rot13抓包](#6-rot13抓包)
+- [2. 其他相关](#2-其他相关)
+- [3. 相关库](#3-相关库)
+- [4. 测试ttcp](#4-测试ttcp)
+- [5. 调试](#5-调试)
+- [6. 测试rot13](#6-测试rot13)
+- [7. rot13抓包](#7-rot13抓包)
 
 <!-- /TOC -->
 
@@ -35,12 +36,26 @@ g++ simper_rot13_server.cpp -g -levent -o simper_rot13_server
 g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 ```
 
-<a id="markdown-2-相关库" name="2-相关库"></a>
-# 2. 相关库
+<a id="markdown-2-其他相关" name="2-其他相关"></a>
+# 2. 其他相关
+
+```bash
+# 查看cmake生成的链接选项
+find . -type f -name 'link.txt' -print0 | xargs -0  grep -in '/usr/bin/c++'
+
+# 查看cmake生成的编译选项
+find . -type f -name '*' -print0 | xargs -0  grep -in 'build flags'
+
+# 好像最终的编译选项在下面的二进制文件里
+./CMakeFiles/2.8.12.2/CompilerIdCXX/a.out
+```
+
+<a id="markdown-3-相关库" name="3-相关库"></a>
+# 3. 相关库
 * https://cmake.org/cmake/help/v3.0/module/FindBoost.html
 
-<a id="markdown-3-测试ttcp" name="3-测试ttcp"></a>
-# 3. 测试ttcp
+<a id="markdown-4-测试ttcp" name="4-测试ttcp"></a>
+# 4. 测试ttcp
 ```
 
 while true; do ./ttcp_test --recv --port 5000; done
@@ -49,8 +64,8 @@ while true; do ./ttcp_test --recv --port 5000; done
 
 ```
 
-<a id="markdown-4-调试" name="4-调试"></a>
-# 4. 调试
+<a id="markdown-5-调试" name="5-调试"></a>
+# 5. 调试
 ```
 > /dev/null 2>&1 &
 kill $(jobs -p)
@@ -62,8 +77,8 @@ gdb --tui ./ttcp_test --args ./ttcp_test -t --host 1.1
 
 ```
 
-<a id="markdown-5-测试rot13" name="5-测试rot13"></a>
-# 5. 测试rot13
+<a id="markdown-6-测试rot13" name="6-测试rot13"></a>
+# 6. 测试rot13
 ```
 tcpdump -XX -i lo port 40713
 tcpdump -i lo port 40713
@@ -77,8 +92,8 @@ printf '123456' | nc 127.0.0.1 40713
 ```
 
 
-<a id="markdown-6-rot13抓包" name="6-rot13抓包"></a>
-# 6. rot13抓包
+<a id="markdown-7-rot13抓包" name="7-rot13抓包"></a>
+# 7. rot13抓包
 ```
 # printf '123456\n' | nc 127.0.0.1 40713
 
