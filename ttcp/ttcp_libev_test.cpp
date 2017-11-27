@@ -59,7 +59,7 @@ static size_t gkrbs(int fd) {
   return krbs;
 }
 
-static void client_cb_state(EV_P_ ev_io *w, int revents) {
+static void client_state_cb(EV_P_ ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
   auto &session_message = ev_client->session_message;
 
@@ -114,6 +114,7 @@ static void client_cb_state(EV_P_ ev_io *w, int revents) {
   }
 }
 
+// NO use
 static void client_cb(EV_P_ ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
   auto &session_message = ev_client->session_message;
@@ -193,7 +194,7 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
   int rtn = setnonblock(ev_client->fd);
   assert(rtn != -1);
 
-  ev_io_init(&ev_client->io, client_cb, ev_client->fd, EV_READ);
+  ev_io_init(&ev_client->io, client_state_cb, ev_client->fd, EV_READ);
   ev_io_start(EV_A_ & ev_client->io);
 }
 
