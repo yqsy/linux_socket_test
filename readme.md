@@ -2,12 +2,14 @@
 <!-- TOC -->
 
 - [1. 编译](#1-编译)
-- [2. 其他相关](#2-其他相关)
-- [3. 相关库](#3-相关库)
-- [4. 测试ttcp](#4-测试ttcp)
-- [5. 调试](#5-调试)
-- [6. 测试rot13](#6-测试rot13)
-- [7. rot13抓包](#7-rot13抓包)
+- [2. 非阻塞I/O写TTCP服务端时联想到状态机](#2-非阻塞io写ttcp服务端时联想到状态机)
+- [3. 非阻塞I/O TTCP服务端的问题](#3-非阻塞io-ttcp服务端的问题)
+- [4. 其他相关](#4-其他相关)
+- [5. 相关库](#5-相关库)
+- [6. 测试ttcp](#6-测试ttcp)
+- [7. 调试](#7-调试)
+- [8. 测试rot13](#8-测试rot13)
+- [9. rot13抓包](#9-rot13抓包)
 
 <!-- /TOC -->
 
@@ -36,8 +38,26 @@ g++ simper_rot13_server.cpp -g -levent -o simper_rot13_server
 g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 ```
 
-<a id="markdown-2-其他相关" name="2-其他相关"></a>
-# 2. 其他相关
+<a id="markdown-2-非阻塞io写ttcp服务端时联想到状态机" name="2-非阻塞io写ttcp服务端时联想到状态机"></a>
+# 2. 非阻塞I/O写TTCP服务端时联想到状态机
+
+* https://blog.codingnow.com/2006/01/aeeieaiaeioeacueoe.html
+
+如果使用阻塞I/O的话(或者协程?),条理是非常清晰的,先收8字节包头信息,再收一个一个收message,但是到了非阻塞IO的话,每次收到的是不明确长度的流,每次都要从流中取到信息,保存成一个状态,下次再收到数据时,根据状态选择去做什么操作.
+
+如果不用状态机去操作的话,那么代码的可读性不会很高.试想应该有如下状态:
+
+* 正在等待包头8字节状态
+* 正在等待整个message (4字节长度 + payload)
+
+<a id="markdown-3-非阻塞io-ttcp服务端的问题" name="3-非阻塞io-ttcp服务端的问题"></a>
+# 3. 非阻塞I/O TTCP服务端的问题
+
+如果收的数据包太大的话,例如内核缓冲区大于1MB时,才收取一次数据,可能会导致发送方send阻塞,因为send方内核缓冲区已经满了,recv方内核缓冲区不到1MB数据,达不到收的状态. 试想这种状况在LENGTH多大时会发生?
+
+
+<a id="markdown-4-其他相关" name="4-其他相关"></a>
+# 4. 其他相关
 
 ```bash
 # 查看cmake生成的链接选项
@@ -50,12 +70,12 @@ find . -type f -name '*' -print0 | xargs -0  grep -in 'build flags'
 ./CMakeFiles/2.8.12.2/CompilerIdCXX/a.out
 ```
 
-<a id="markdown-3-相关库" name="3-相关库"></a>
-# 3. 相关库
+<a id="markdown-5-相关库" name="5-相关库"></a>
+# 5. 相关库
 * https://cmake.org/cmake/help/v3.0/module/FindBoost.html
 
-<a id="markdown-4-测试ttcp" name="4-测试ttcp"></a>
-# 4. 测试ttcp
+<a id="markdown-6-测试ttcp" name="6-测试ttcp"></a>
+# 6. 测试ttcp
 ```
 
 while true; do ./ttcp_test --recv --port 5000; done
@@ -64,8 +84,8 @@ while true; do ./ttcp_test --recv --port 5000; done
 
 ```
 
-<a id="markdown-5-调试" name="5-调试"></a>
-# 5. 调试
+<a id="markdown-7-调试" name="7-调试"></a>
+# 7. 调试
 ```
 > /dev/null 2>&1 &
 kill $(jobs -p)
@@ -77,8 +97,8 @@ gdb --tui ./ttcp_test --args ./ttcp_test -t --host 1.1
 
 ```
 
-<a id="markdown-6-测试rot13" name="6-测试rot13"></a>
-# 6. 测试rot13
+<a id="markdown-8-测试rot13" name="8-测试rot13"></a>
+# 8. 测试rot13
 ```
 tcpdump -XX -i lo port 40713
 tcpdump -i lo port 40713
@@ -92,8 +112,8 @@ printf '123456' | nc 127.0.0.1 40713
 ```
 
 
-<a id="markdown-7-rot13抓包" name="7-rot13抓包"></a>
-# 7. rot13抓包
+<a id="markdown-9-rot13抓包" name="9-rot13抓包"></a>
+# 9. rot13抓包
 ```
 # printf '123456\n' | nc 127.0.0.1 40713
 

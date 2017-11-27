@@ -9,9 +9,14 @@
 #include "common.h"
 
 struct EvClient;
+struct EvServer;
+
 typedef std::shared_ptr<EvClient> EvClientPtr;
 
-struct EvServer;
+enum RecvState {
+  kExpectFrameSize, // Waiting for header 8 Bytes
+  kExceptFrame      // Waiting for 4 Bytes length and payload
+};
 
 struct EvClient {
   ev_io io;
@@ -20,6 +25,7 @@ struct EvClient {
   char *buffer;
   int ack;
   int count;
+  RecvState recv_state;
   EvServer *ev_server;
 };
 
