@@ -19,13 +19,39 @@
 
 namespace po = boost::program_options;
 
-uint16_t PORT;
-int BUFFER_LENGTH;
-int BUFFER_NUMBER;
-bool TRANSMIT;
-std::string TO_HOST;
-
 const int MAX_RECEIVE_LENGTH = 1024 * 1024 * 10; // 10MB
+
+int write_n(int sockfd, const void *buf, int length) {
+  int written = 0;
+  while (written < length) {
+    ssize_t nw = write(sockfd, (const char *)buf + written, length - written);
+    if (nw > 0) {
+      written += int(nw);
+    } else if (nw == 0) {
+      break; // EOF
+    } else if (errno != EINTR) {
+      perror("write");
+      break;
+    }
+  }
+  return written;
+}
+
+int read_n(int sockfd, void *buf, int length) {
+  int nread = 0;
+  while (nread < length) {
+    ssize_t nr = read(sockfd, (char *)buf + nread, length - nread);
+    if (nr > 0) {
+      nread += (int)nr;
+    } else if (nr == 0) {
+      break; // EOF
+    } else if (errno != EINTR) {
+      perror("read");
+      break;
+    }
+  }
+  return nread;
+}
 
 static int accept_or_die(uint16_t port) {
   int listenfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -82,10 +108,10 @@ static sockaddr_in resolve_or_die(const char *host, uint16_t port) {
   return addr;
 }
 
-void transmit() {
-  struct sockaddr_in addr = resolve_or_die(TO_HOST.c_str(), PORT);
+void transmit(const Option &option) {
+  struct sockaddr_in addr = resolve_or_die(option.host.c_str(), option.port);
 
-  printf("connecting to %s:%d\n", inet_ntoa(addr.sin_addr), PORT);
+  printf("connecting to %s:%d\n", inet_ntoa(addr.sin_addr), option.port);
 
   int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -94,7 +120,7 @@ void transmit() {
   int ret = connect(sockfd, (sockaddr *)&addr, sizeof(addr));
   if (ret) {
     perror("connet");
-    printf("Unable to connect %s\n", TO_HOST.c_str());
+    printf("Unable to connect %s\n", option.host.c_str());
     close(sockfd);
     return;
   }
@@ -104,8 +130,8 @@ void transmit() {
   auto start = std::chrono::high_resolution_clock::now();
 
   struct SessionMessage session_message = {0, 0};
-  session_message.number = ntohl(BUFFER_NUMBER);
-  session_message.length = ntohl(BUFFER_LENGTH);
+  session_message.number = ntohl(option.number);
+  session_message.length = ntohl(option.length);
 
   if (write_n(sockfd, &session_message, sizeof(session_message)) !=
       sizeof(session_message)) {
@@ -113,20 +139,20 @@ void transmit() {
     exit(1);
   }
 
-  const int total_len = int(sizeof(int32_t) + BUFFER_LENGTH);
+  const int total_len = int(sizeof(int32_t) + option.length);
 
   PayloadMessage *payload = (PayloadMessage *)(malloc(total_len));
 
   assert(payload);
-  payload->length = htonl(BUFFER_LENGTH);
-  for (int i = 0; i < BUFFER_LENGTH; ++i) {
+  payload->length = htonl(option.length);
+  for (int i = 0; i < option.length; ++i) {
     payload->data[i] = "0123456789ABCDEF"[i % 16];
   }
 
-  double total_mb = 1.0 * BUFFER_LENGTH * BUFFER_NUMBER / 1024 / 1024;
+  double total_mb = 1.0 * option.length * option.number / 1024 / 1024;
   printf("%.3f MiB in total\n", total_mb);
 
-  for (int i = 0; i < BUFFER_NUMBER; ++i) {
+  for (int i = 0; i < option.number; ++i) {
     int nw = write_n(sockfd, payload, total_len);
     assert(nw == total_len);
 
@@ -134,7 +160,7 @@ void transmit() {
     int nr = read_n(sockfd, &ack, sizeof(ack));
     assert(nr == sizeof(ack));
     ack = ntohl(ack);
-    assert(ack == BUFFER_LENGTH);
+    assert(ack == option.length);
   }
 
   free(payload);
@@ -146,8 +172,8 @@ void transmit() {
          total_mb / elasped_seconds.count());
 }
 
-void receive() {
-  int sockfd = accept_or_die(PORT);
+void receive(const Option &option) {
+  int sockfd = accept_or_die(option.port);
 
   struct SessionMessage session_message = {0, 0};
   if (read_n(sockfd, &session_message, sizeof(session_message)) !=
@@ -196,39 +222,16 @@ void receive() {
 }
 
 int main(int argc, char *argv[]) {
-  po::options_description desc("Allowed options");
-  desc.add_options()("help,h", "Help")(
-      "port,p", po::value<uint16_t>(&PORT)->default_value(5001), "TCP port")(
-      "length,l", po::value<int>(&BUFFER_LENGTH)->default_value(65536),
-      "Buffer length")(
-      "number,n", po::value<int>(&BUFFER_NUMBER)->default_value(8192),
-      "Number of buffers")("trans,t", "Transmit")("recv,r", "Receive")(
-      "host", po::value<std::string>(&TO_HOST)->default_value("127.0.0.1"),
-      "Transmit to host");
+  Option option;
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
-
-  if (vm.count("help")) {
-    std::cout << desc << std::endl;
-    return 0;
-  }
-
-  if (vm.count("trans") && vm.count("recv")) {
-    printf("-t -r must be specified.\n");
-    return 0;
-  }
-
-  if (vm.count("trans")) {
-    printf("host = %s, port = %d\n", TO_HOST.c_str(), PORT);
-    printf("buffer length = %d\n", BUFFER_LENGTH);
-    printf("number of buffers = %d\n", BUFFER_NUMBER);
-    transmit();
-  } else if (vm.count("recv")) {
-    printf("port = %d\n", PORT);
-    printf("accepting...\n");
-    receive();
+  if (parse_command_line(argc, argv, &option)) {
+    if (option.transmit) {
+      transmit(option);
+    } else if (option.receive) {
+      receive(option);
+    } else {
+      assert(0);
+    }
   }
 
   return 0;

@@ -16,8 +16,6 @@
 #include "common.h"
 #include "ttcp_libev_test.h"
 
-uint16_t PORT = 5002;
-
 const int MAX_RECEIVE_LENGTH = 1024 * 1024 * 10; // 10MB
 
 int setnonblock(int fd) {
@@ -155,19 +153,27 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
   ev_io_start(EV_A_ & ev_client->io);
 }
 
-int main() {
-  EV_P = ev_default_loop(0);
+int main(int argc, char *argv[]) {
 
-  EvServer server;
+  Option option;
+  if (parse_command_line(argc, argv, &option)) {
+    if (option.receive) {
+      EV_P = ev_default_loop(0);
+      EvServer server;
 
-  server.fd = get_listen_fd(PORT);
-  ev_io_init(&server.io, server_cb, server.fd, EV_READ);
-  ev_io_start(EV_A_ & server.io);
+      server.fd = get_listen_fd(option.port);
+      ev_io_init(&server.io, server_cb, server.fd, EV_READ);
+      ev_io_start(EV_A_ & server.io);
 
-  printf("listening on port = %d, looping\n", PORT);
+      printf("listening on port = %d, looping\n", option.port);
 
-  ev_loop(EV_A_ 0);
+      ev_loop(EV_A_ 0);
 
-  close(server.fd);
+      close(server.fd);
+    } else {
+      assert(0);
+    }
+  }
+
   return 0;
 }

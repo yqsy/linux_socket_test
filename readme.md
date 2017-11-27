@@ -53,8 +53,8 @@ g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 <a id="markdown-3-非阻塞io-ttcp服务端的问题" name="3-非阻塞io-ttcp服务端的问题"></a>
 # 3. 非阻塞I/O TTCP服务端的问题
 
-如果收的数据包太大的话,例如内核缓冲区大于1MB时,才收取一次数据,可能会导致发送方send阻塞,因为send方内核缓冲区已经满了,recv方内核缓冲区不到1MB数据,达不到收的状态. 试想这种状况在LENGTH多大时会发生?
-
+如果收的数据包太大的话,例如内核缓冲区大于1MB时,才收取一次数据,可能会导致发送方send阻塞,因为send方内核缓冲区已经满了,recv方内核缓冲区不到1MB数据,达不到收的状态. 试想这种状况在LENGTH多大时会发生?  
+? 不对啊,recv方缓冲区为什么会不到1MB?这句话有问题把
 
 <a id="markdown-4-其他相关" name="4-其他相关"></a>
 # 4. 其他相关
