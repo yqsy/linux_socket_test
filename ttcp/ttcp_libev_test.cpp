@@ -79,6 +79,8 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
         const int total_len = int(sizeof(int32_t) + session_message.length);
         ev_client->buffer = (char *)malloc(total_len);
         ev_client->ack = htonl(session_message.length);
+
+        ev_client->recv_state = kExceptFrame;
       } else {
         break;
       }
@@ -89,21 +91,24 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
         assert(rb == total_len);
 
         int *header4_bytes = (int *)ev_client->buffer;
-        assert(ntohl(*header4_bytes) == session_message.length);
+        assert(ntohl(*header4_bytes) == size_t(session_message.length));
 
         int wb = write(ev_client->fd, &ev_client->ack, sizeof(ev_client->ack));
         assert(wb == sizeof(ev_client->ack));
 
         ++ev_client->count;
         if (ev_client->count >= session_message.number) {
+          ev_io_stop(EV_A_ & ev_client->io);
           close(ev_client->fd);
           free(ev_client->buffer);
           // FIXME: O(n)
           auto &ev_clients = ev_client->ev_server->ev_clients;
-          for (auto iter = ev_clients.begin(); iter != ev_clients.end();
-               ++iter) {
+
+          for (auto iter = ev_clients.begin(); iter != ev_clients.end();) {
             if (&**iter == ev_client) {
-              ev_clients.erase(iter);
+              iter = ev_clients.erase(iter);
+            } else {
+              ++iter;
             }
           }
         }
@@ -186,6 +191,9 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
 
   EvServer *ev_server = (EvServer *)w;
   assert(ev_server->fd >= 0);
+
+  ev_client->ev_server = ev_server;
+
   ev_server->ev_clients.push_back(ev_client);
 
   ev_client->fd = accept(ev_server->fd, NULL, NULL);
