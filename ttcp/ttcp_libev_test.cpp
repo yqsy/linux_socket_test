@@ -73,7 +73,9 @@ static void client_cb_state(EV_P_ ev_io *w, int revents) {
         assert(rb == sizeof(session_message));
         session_message.number = ntohl(session_message.number);
         session_message.length = ntohl(session_message.length);
+        assert(session_message.number > 0 && session_message.length > 0);
         assert(ev_client->buffer == NULL);
+
         const int total_len = int(sizeof(int32_t) + session_message.length);
         ev_client->buffer = (char *)malloc(total_len);
         ev_client->ack = htonl(session_message.length);
