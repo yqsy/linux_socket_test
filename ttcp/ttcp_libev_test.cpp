@@ -63,10 +63,9 @@ static void client_cb_state(EV_P_ ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
   auto &session_message = ev_client->session_message;
 
-  bool more = true;
   size_t rb = 0;
 
-  while (more) {
+  for (;;) {
     if (ev_client->recv_state == kExpectFrameSize) {
       if (gkrbs(ev_client->fd) >= sizeof(SessionMessage)) {
         rb = read(ev_client->fd, (char *)&session_message,
