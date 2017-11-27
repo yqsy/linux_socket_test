@@ -130,68 +130,6 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
   }
 }
 
-// NO use
-// static void client_cb(EV_P_ ev_io *w, int revents) {
-//   EvClient *ev_client = (EvClient *)w;
-//   auto &session_message = ev_client->session_message;
-
-//   size_t rb = 0;
-
-//   while (gkrbs(ev_client->fd) >= sizeof(int32_t)) {
-//     if (session_message.number == 0 && session_message.length == 0) {
-//       if (gkrbs(ev_client->fd) >= sizeof(SessionMessage)) {
-//         rb = read(ev_client->fd, (char *)&session_message,
-//                   sizeof(session_message));
-//         assert(rb == sizeof(session_message));
-//         session_message.number = ntohl(session_message.number);
-//         session_message.length = ntohl(session_message.length);
-
-//         assert(ev_client->buffer == NULL);
-//         const int total_len = int(sizeof(int32_t) + session_message.length);
-//         ev_client->buffer = (char *)malloc(total_len);
-//         ev_client->ack = session_message.length;
-//       } else {
-//         break;
-//       }
-//     } else {
-//       const size_t total_len = sizeof(int32_t) + size_t(session_message.length);
-//       int32_t length = 0;
-//       rb = recv(ev_client->fd, (char *)&length, sizeof(length), MSG_PEEK);
-//       assert(rb == sizeof(int32_t));
-
-//       length = ntohl(length);
-//       assert(length == session_message.length);
-
-//       if (gkrbs(ev_client->fd) >= total_len) {
-//         assert(ev_client->buffer != NULL);
-//         rb = read(ev_client->fd, ev_client->buffer, total_len);
-//         assert(rb == total_len);
-
-//         int rtn_ack = htonl(ev_client->ack);
-//         int wb = write(ev_client->fd, &rtn_ack, sizeof(ev_client->ack));
-//         assert(wb == sizeof(ev_client->ack));
-
-//         ++ev_client->count;
-//         if (ev_client->count >= session_message.number) {
-//           close(ev_client->fd);
-//           free(ev_client->buffer);
-//           // FIXME: O(n)
-//           auto &ev_clients = ev_client->ev_server->ev_clients;
-//           for (auto iter = ev_clients.begin(); iter != ev_clients.end();
-//                ++iter) {
-//             if (&**iter == ev_client) {
-//               ev_clients.erase(iter);
-//             }
-//           }
-//         }
-
-//       } else {
-//         break;
-//       }
-//     }
-//   }
-// }
-
 static void server_cb(EV_P_ ev_io *w, int revents) {
   printf("server fd become readable\n");
 
