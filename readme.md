@@ -3,7 +3,9 @@
 
 - [1. 编译](#1-编译)
 - [2. 非阻塞I/O写TTCP服务端时联想到状态机](#2-非阻塞io写ttcp服务端时联想到状态机)
-- [3. 非阻塞I/O TTCP服务端的问题](#3-非阻塞io-ttcp服务端的问题)
+- [3. libev 非阻塞I/O TTCP服务端的问题](#3-libev-非阻塞io-ttcp服务端的问题)
+    - [3.1. 死锁问题](#31-死锁问题)
+    - [3.2. 性能差问题](#32-性能差问题)
 - [4. 其他相关](#4-其他相关)
 - [5. 相关库](#5-相关库)
 - [6. 测试ttcp](#6-测试ttcp)
@@ -50,9 +52,12 @@ g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 * 正在等待包头8字节状态
 * 正在等待整个message (4字节长度 + payload)
 
-<a id="markdown-3-非阻塞io-ttcp服务端的问题" name="3-非阻塞io-ttcp服务端的问题"></a>
-# 3. 非阻塞I/O TTCP服务端的问题
+<a id="markdown-3-libev-非阻塞io-ttcp服务端的问题" name="3-libev-非阻塞io-ttcp服务端的问题"></a>
+# 3. libev 非阻塞I/O TTCP服务端的问题
 
+
+<a id="markdown-31-死锁问题" name="31-死锁问题"></a>
+## 3.1. 死锁问题
 如果收的数据包太大的话,例如内核缓冲区大于1MB时,才收取一次数据,可能会导致发送方send阻塞,因为send方内核缓冲区已经满了,recv方内核缓冲区不到1MB数据,达不到收的状态. 试想这种状况在LENGTH多大时会发生?  
 ? 不对啊,recv方缓冲区为什么会不到1MB?这句话有问题把
 
@@ -67,6 +72,30 @@ Proto Recv-Q Send-Q Local Address           Foreign Address         State       
 tcp        0 3508616(发) 127.0.0.1:36252         127.0.0.1:5001          ESTABLISHED 14279/./ttcp_test
 tcp   (收)972544      0 127.0.0.1:5001          127.0.0.1:36252         ESTABLISHED 14273/ttcp_libev_te
 
+```
+
+<a id="markdown-32-性能差问题" name="32-性能差问题"></a>
+## 3.2. 性能差问题
+猜测是系统调用的问题哈,使用`valgrind`看看
+
+./ttcp_test --trans --port 5003 --length 972540 --number 8192
+host = 127.0.0.1, port = 5003
+
+3081.452 Mib/s
+
+
+./ttcp_test --trans --port 5001 --length 972540 --number 8192
+host = 127.0.0.1, port = 5001
+
+5065.302 Mib/s
+
+测试工具:
+* https://github.com/jrfonseca/gprof2dot
+* http://valgrind.org/docs/manual/cl-manual.html
+* http://kcachegrind.sourceforge.net/html/Home.html
+
+```
+valgrind --tool=callgrind --trace-children=yes ./ttcp_libev_test -r --port 5003
 ```
 
 <a id="markdown-4-其他相关" name="4-其他相关"></a>
