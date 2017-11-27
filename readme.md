@@ -56,6 +56,19 @@ g++ ttcp_test.cpp -std=c++11 -lboost_program_options -g -o ttcp_test
 如果收的数据包太大的话,例如内核缓冲区大于1MB时,才收取一次数据,可能会导致发送方send阻塞,因为send方内核缓冲区已经满了,recv方内核缓冲区不到1MB数据,达不到收的状态. 试想这种状况在LENGTH多大时会发生?  
 ? 不对啊,recv方缓冲区为什么会不到1MB?这句话有问题把
 
+
+知道了,我的做法是在应用层没有缓冲区,所以数据全缓存到内核缓冲区了,没成功交给应用层
+
+内核缓冲区最大是`972544`吗`./ttcp_test --trans --port 5001 --length 972540 --number 8192` ,972540 + 包头4 能成功收发包了
+
+```
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0 3508616(发) 127.0.0.1:36252         127.0.0.1:5001          ESTABLISHED 14279/./ttcp_test
+tcp   (收)972544      0 127.0.0.1:5001          127.0.0.1:36252         ESTABLISHED 14273/ttcp_libev_te
+
+```
+
 <a id="markdown-4-其他相关" name="4-其他相关"></a>
 # 4. 其他相关
 
