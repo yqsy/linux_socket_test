@@ -197,20 +197,15 @@ void receive(const Option &option) {
   assert(payload);
 
   for (int i = 0; i < session_message.number; ++i) {
-    payload->length = 0;
-    if (read_n(sockfd, &payload->length, sizeof(payload->length)) !=
-        sizeof(payload->length)) {
-      perror("read length");
+
+    if (read_n(sockfd, payload, total_len) != total_len) {
+      perror("read");
       exit(1);
     }
 
     payload->length = ntohl(payload->length);
     assert(payload->length == session_message.length);
 
-    if (read_n(sockfd, payload->data, payload->length) != payload->length) {
-      perror("read payload data");
-      exit(1);
-    }
     int32_t ack = htonl(payload->length);
     if (write_n(sockfd, &ack, sizeof(ack)) != sizeof(ack)) {
       perror("write ack");

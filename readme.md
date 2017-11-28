@@ -90,12 +90,28 @@ host = 127.0.0.1, port = 5001
 5065.302 Mib/s
 
 测试工具:
-* https://github.com/jrfonseca/gprof2dot
-* http://valgrind.org/docs/manual/cl-manual.html
-* http://kcachegrind.sourceforge.net/html/Home.html
+* https://github.com/jrfonseca/gprof2dot (pip安装,生成图片用)
+* http://valgrind.org/docs/manual/cl-manual.html (valgrind和callgrind)
+* http://kcachegrind.sourceforge.net/html/Home.html (qt写的,配合桌面端用)
 
-```
+![](http://ouxarji35.bkt.clouddn.com/valgrind.png)
+
+```bash
+# 启动进程
 valgrind --tool=callgrind --trace-children=yes ./ttcp_libev_test -r --port 5003
+
+# 打印当前栈回溯
+callgrind_control -e -b
+
+# 显示每个函数的调用次数
+callgrind_annotate ./callgrind.out.24235
+
+# 生成dot
+gprof2dot -f callgrind -s callgrind.out.24988 > valgrind.dot
+
+# dot转换成png
+dot -Tpng valgrind.dot -o valgrind.png
+
 ```
 
 <a id="markdown-4-其他相关" name="4-其他相关"></a>
