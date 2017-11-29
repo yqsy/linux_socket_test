@@ -6,12 +6,13 @@
 - [3. libev 非阻塞I/O TTCP服务端的问题](#3-libev-非阻塞io-ttcp服务端的问题)
     - [3.1. 死锁问题](#31-死锁问题)
     - [3.2. 性能差问题](#32-性能差问题)
-- [4. 其他相关](#4-其他相关)
-- [5. 相关库](#5-相关库)
-- [6. 测试ttcp](#6-测试ttcp)
-- [7. 调试](#7-调试)
-- [8. 测试rot13](#8-测试rot13)
-- [9. rot13抓包](#9-rot13抓包)
+- [4. libevent bufferevent机制 测试](#4-libevent-bufferevent机制-测试)
+- [5. 其他相关](#5-其他相关)
+- [6. 相关库](#6-相关库)
+- [7. 测试ttcp](#7-测试ttcp)
+- [8. 调试](#8-调试)
+- [9. 测试rot13](#9-测试rot13)
+- [10. rot13抓包](#10-rot13抓包)
 
 <!-- /TOC -->
 
@@ -116,8 +117,24 @@ dot -Tpng valgrind.dot -o valgrind.png
 
 ```
 
-<a id="markdown-4-其他相关" name="4-其他相关"></a>
-# 4. 其他相关
+<a id="markdown-4-libevent-bufferevent机制-测试" name="4-libevent-bufferevent机制-测试"></a>
+# 4. libevent bufferevent机制 测试
+```bash
+# 开启监听 设置`bufferevent_setwatermark(bev, EV_READ, 0, MAX_LINE);`为16384
+./ttcp_libevent_test -r
+
+# 发送3OMB数据
+dd if=/dev/zero bs=1M count=30 | nc -C  localhost 5001
+
+# 可以看到发送内核缓冲区被填满了,接收内核缓冲区被填满了(但是不知道这个是哪个内核参数)
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0 2767476 127.0.0.1:36946         127.0.0.1:5001          ESTABLISHED 51172/nc
+tcp   968076      0 127.0.0.1:5001          127.0.0.1:36946         ESTABLISHED 51166/./ttcp_libeve
+```
+
+<a id="markdown-5-其他相关" name="5-其他相关"></a>
+# 5. 其他相关
 
 ```bash
 # 查看cmake生成的链接选项
@@ -130,12 +147,12 @@ find . -type f -name '*' -print0 | xargs -0  grep -in 'build flags'
 ./CMakeFiles/2.8.12.2/CompilerIdCXX/a.out
 ```
 
-<a id="markdown-5-相关库" name="5-相关库"></a>
-# 5. 相关库
+<a id="markdown-6-相关库" name="6-相关库"></a>
+# 6. 相关库
 * https://cmake.org/cmake/help/v3.0/module/FindBoost.html
 
-<a id="markdown-6-测试ttcp" name="6-测试ttcp"></a>
-# 6. 测试ttcp
+<a id="markdown-7-测试ttcp" name="7-测试ttcp"></a>
+# 7. 测试ttcp
 ```
 
 while true; do ./ttcp_test --recv --port 5000; done
@@ -144,8 +161,8 @@ while true; do ./ttcp_test --recv --port 5000; done
 
 ```
 
-<a id="markdown-7-调试" name="7-调试"></a>
-# 7. 调试
+<a id="markdown-8-调试" name="8-调试"></a>
+# 8. 调试
 ```
 > /dev/null 2>&1 &
 kill $(jobs -p)
@@ -157,8 +174,8 @@ gdb --tui ./ttcp_test --args ./ttcp_test -t --host 1.1
 
 ```
 
-<a id="markdown-8-测试rot13" name="8-测试rot13"></a>
-# 8. 测试rot13
+<a id="markdown-9-测试rot13" name="9-测试rot13"></a>
+# 9. 测试rot13
 ```
 tcpdump -XX -i lo port 40713
 tcpdump -i lo port 40713
@@ -172,8 +189,8 @@ printf '123456' | nc 127.0.0.1 40713
 ```
 
 
-<a id="markdown-9-rot13抓包" name="9-rot13抓包"></a>
-# 9. rot13抓包
+<a id="markdown-10-rot13抓包" name="10-rot13抓包"></a>
+# 10. rot13抓包
 ```
 # printf '123456\n' | nc 127.0.0.1 40713
 

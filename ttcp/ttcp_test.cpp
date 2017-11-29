@@ -17,6 +17,8 @@
 #include "common.h"
 #include "ttcp_test.h"
 
+#define assert__(x) for (; !(x); assert(x))
+
 namespace po = boost::program_options;
 
 const int MAX_RECEIVE_LENGTH = 1024 * 1024 * 10; // 10MB
@@ -158,7 +160,7 @@ void transmit(const Option &option) {
 
     int ack = 0;
     int nr = read_n(sockfd, &ack, sizeof(ack));
-    assert(nr == sizeof(ack));
+    assert__(nr == sizeof(ack)) { printf("%d != %lu", nr, sizeof(ack)); };
     ack = ntohl(ack);
     assert(ack == option.length);
   }
