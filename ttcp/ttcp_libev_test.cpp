@@ -92,6 +92,7 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
         break;
       }
     } else if (ev_client->recv_state == kExceptFrame) {
+      // TODO: user level buffer
       const size_t total_len = sizeof(int32_t) + size_t(session_message.length);
       if (gkrbs(ev_client->fd) >= total_len) {
         rb = read(ev_client->fd, ev_client->buffer, total_len);
