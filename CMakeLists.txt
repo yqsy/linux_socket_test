@@ -13,8 +13,10 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 find_library(BOOSTPO_LIBRARY NAMES boost_program_options)
 find_library(EV_LIBRARY NAMES ev)
+find_library(EVENT_LIBRARY NAMES event)
 
 message(${BOOSTPO_LIBRARY})
 message(${EV_LIBRARY})
+message(${EVENT_LIBRARY})
 
 add_subdirectory(ttcp)
