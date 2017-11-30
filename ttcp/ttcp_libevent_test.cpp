@@ -2,10 +2,12 @@
 #include <assert.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h> /* See NOTES */
 #include <unistd.h>
+
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -42,6 +44,15 @@ int get_listen_fd(uint16_t port) {
   rtn = listen(fd, 5);
   assert(rtn == 0);
   return fd;
+}
+
+void signal_cb(evutil_socket_t sig, short events, void *user_data) {
+
+  event_base *base = (event_base *)user_data;
+  timeval delay = {2, 0};
+
+  printf("Caught an interrupt signal; exiting cleanly in two seconds.\n");
+  event_base_loopexit(base, &delay);
 }
 
 void read_cb(bufferevent *bev, void *ctx) {
@@ -155,6 +166,10 @@ int main(int argc, char *argv[]) {
 
       event_base *base = event_base_new();
       assert(base);
+
+      event *signal_event = evsignal_new(base, SIGINT, signal_cb, (void *)base);
+      assert(signal_event);
+      event_add(signal_event, NULL);
 
       event *listener_event = event_new(base, listener_fd, EV_READ | EV_PERSIST,
                                         do_accept, (void *)base);

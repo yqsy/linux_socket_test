@@ -95,6 +95,7 @@ host = 127.0.0.1, port = 5001
 测试工具:
 * https://github.com/jrfonseca/gprof2dot (pip安装,生成图片用)
 * http://valgrind.org/docs/manual/cl-manual.html (valgrind和callgrind)
+* http://www.thegeekstuff.com/2012/08/gprof-tutorial (gprof)
 * http://kcachegrind.sourceforge.net/html/Home.html (qt写的,配合桌面端用)
 
 ![](http://ouxarji35.bkt.clouddn.com/valgrind.png)
