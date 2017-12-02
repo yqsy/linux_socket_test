@@ -57,7 +57,7 @@ static size_t gkrbs(int fd) {
   return krbs;
 }
 
-static void client_state_cb(EV_P_ ev_io *w, int revents) {
+static void client_state_cb(struct ev_loop *loop, ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
   auto &session_message = ev_client->session_message;
   ev_client->interrupt_count++;
@@ -108,7 +108,7 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
         if (ev_client->count >= session_message.number) {
           printf("delete client = %d, interrupt_count = %d\n", ev_client->fd,
                  ev_client->interrupt_count);
-          ev_io_stop(EV_A_ & ev_client->io);
+          ev_io_stop(loop, &ev_client->io);
           close(ev_client->fd);
           free(ev_client->buffer);
           // FIXME: O(n)
@@ -129,7 +129,7 @@ static void client_state_cb(EV_P_ ev_io *w, int revents) {
   }
 }
 
-static void server_cb(EV_P_ ev_io *w, int revents) {
+static void server_cb(struct ev_loop *loop, ev_io *w, int revents) {
   printf("server fd become readable\n");
 
   EvClientPtr ev_client = std::make_shared<EvClient>();
@@ -151,7 +151,7 @@ static void server_cb(EV_P_ ev_io *w, int revents) {
   assert(rtn != -1);
 
   ev_io_init(&ev_client->io, client_state_cb, ev_client->fd, EV_READ);
-  ev_io_start(EV_A_ & ev_client->io);
+  ev_io_start(loop, &ev_client->io);
 }
 
 int main(int argc, char *argv[]) {
@@ -159,16 +159,18 @@ int main(int argc, char *argv[]) {
   Option option;
   if (parse_command_line(argc, argv, &option)) {
     if (option.receive) {
-      EV_P = ev_default_loop(0);
+
+      struct ev_loop *loop = ev_default_loop(0);
+
       EvServer server;
 
       server.fd = get_listen_fd(option.port);
       ev_io_init(&server.io, server_cb, server.fd, EV_READ);
-      ev_io_start(EV_A_ & server.io);
+      ev_io_start(loop, &server.io);
 
       printf("listening on port = %d, looping\n", option.port);
 
-      ev_loop(EV_A_ 0);
+      ev_loop(loop, 0);
 
       close(server.fd);
     } else {
