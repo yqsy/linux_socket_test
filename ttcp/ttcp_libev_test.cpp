@@ -154,6 +154,11 @@ static void server_cb(struct ev_loop *loop, ev_io *w, int revents) {
   ev_io_start(loop, &ev_client->io);
 }
 
+void handle_singint(struct ev_loop *loop, ev_signal *w, int revents) {
+  printf("exit\n");
+  ev_break(loop, EVBREAK_ALL);
+}
+
 int main(int argc, char *argv[]) {
 
   Option option;
@@ -161,6 +166,10 @@ int main(int argc, char *argv[]) {
     if (option.receive) {
 
       struct ev_loop *loop = ev_default_loop(0);
+
+      ev_signal signal_watcher;
+      ev_signal_init(&signal_watcher, handle_singint, SIGINT);
+      ev_signal_start(loop, &signal_watcher);
 
       EvServer server;
 
