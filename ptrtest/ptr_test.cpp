@@ -15,5 +15,11 @@ int main() {
   std::cout << "p1: " << p1.use_count() << std::endl;
   // std::cout << "p2: " << p2.use_count() << " p1: " << p1.use_count() << "\n";
 
+  std::shared_ptr<int> p3(new int);
+  p1.reset();
+  std::cout << "p1: " << p1.use_count() << std::endl;
+
+  p1 = p3;
+  std::cout << "p1: " << p1.use_count() << std::endl;
   return 0;
 }

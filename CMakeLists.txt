@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall -Wextra -Wno-unused-parameter")
 
 project(linux_socket_test)
@@ -23,3 +24,4 @@ message("${PTHREAD_LIBRARY}")
 
 add_subdirectory(ttcp)
 add_subdirectory(ptrtest)
+add_subdirectory(gprof_test)

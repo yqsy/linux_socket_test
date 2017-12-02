@@ -102,20 +102,31 @@ host = 127.0.0.1, port = 5001
 
 ```bash
 # 启动进程
-valgrind --tool=callgrind --trace-children=yes ./ttcp_libev_test -r --port 5003
+valgrind --tool=callgrind --trace-children=yes ./ttcp_libev_test -r --port 5001
 
 # 打印当前栈回溯
 callgrind_control -e -b
 
 # 显示每个函数的调用次数
-callgrind_annotate ./callgrind.out.24235
+callgrind_annotate ./callgrind.out.24988
 
 # 生成dot
 gprof2dot -f callgrind -s callgrind.out.24988 > valgrind.dot
 
 # dot转换成png
-dot -Tpng valgrind.dot -o valgrind.png
+dot -Tpng valgrind.dot -o /tmp/valgrind.png
 
+# gprof当程序exit时生成
+gmon.out
+
+# 生成analyze报告(依赖二进制文件)
+gprof ./ttcp_libevent_test gmon.out > gprof.txt
+
+# 生成dot
+gprof2dot -s gprof.txt > gprof.dot 
+
+# 生成png
+dot -Tpng gprof.dot -o /tmp/gprof.png
 ```
 
 <a id="markdown-4-libevent-bufferevent机制-测试" name="4-libevent-bufferevent机制-测试"></a>
@@ -139,7 +150,7 @@ tcp   968076      0 127.0.0.1:5001          127.0.0.1:36946         ESTABLISHED 
 
 ```bash
 # 查看cmake生成的链接选项
-find . -type f -name 'link.txt' -print0 | xargs -0  grep -in '/usr/bin/c++'
+find . -type f -name 'link.txt' -print0 | xargs -0  grep -in '/usr/bin/'
 
 # 查看cmake生成的编译选项
 find . -type f -name '*' -print0 | xargs -0  grep -in 'build flags'

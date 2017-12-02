@@ -8,7 +8,6 @@
 #include <sys/types.h> /* See NOTES */
 #include <unistd.h>
 
-
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 #include <event2/event.h>
@@ -18,7 +17,8 @@
 #include "common.h"
 #include "ttcp_libevent_test.h"
 
-const int MAX_LINE = 16384; // 1024 * 16
+// const int MAX_LINE = 16384; // 1024 * 16
+const int MAX_LINE = 1024 * 1024 * 2;
 
 const int MAX_RECEIVE_LENGTH = 1024 * 1024 * 10; // 10MB
 
@@ -49,10 +49,10 @@ int get_listen_fd(uint16_t port) {
 void signal_cb(evutil_socket_t sig, short events, void *user_data) {
 
   event_base *base = (event_base *)user_data;
-  timeval delay = {2, 0};
+  // timeval delay = {1, 0};
 
-  printf("Caught an interrupt signal; exiting cleanly in two seconds.\n");
-  event_base_loopexit(base, &delay);
+  printf("exit\n");
+  event_base_loopexit(base, NULL);
 }
 
 void read_cb(bufferevent *bev, void *ctx) {
