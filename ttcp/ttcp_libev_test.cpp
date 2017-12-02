@@ -10,6 +10,7 @@
 #include <ev.h>
 
 #include <cassert>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -179,7 +180,6 @@ void handle_singint(struct ev_loop *loop, ev_signal *w, int revents) {
 }
 
 int main(int argc, char *argv[]) {
-
   Option option;
   if (parse_command_line(argc, argv, &option)) {
     if (option.receive) {
