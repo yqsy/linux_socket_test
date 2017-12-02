@@ -63,7 +63,6 @@ static size_t gkrbs(int fd) {
 static void client_state_cb(struct ev_loop *loop, ev_io *w, int revents) {
   EvClient *ev_client = (EvClient *)w;
   auto &session_message = ev_client->session_message;
-  ev_client->interrupt_count++;
 
   for (;;) {
     if (ev_client->recv_state == kExpectFrameSize) {
@@ -126,8 +125,7 @@ static void client_state_cb(struct ev_loop *loop, ev_io *w, int revents) {
 
         ++ev_client->count;
         if (ev_client->count >= session_message.number) {
-          printf("delete client = %d, interrupt_count = %d\n", ev_client->fd,
-                 ev_client->interrupt_count);
+
           ev_io_stop(loop, &ev_client->io);
           close(ev_client->fd);
           free(ev_client->buffer);
