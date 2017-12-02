@@ -26,6 +26,7 @@ struct EvClient {
   int ack;
   int count;
   int interrupt_count;
+  size_t current_recv_bytes; // remove ioctl to control performance
   RecvState recv_state;
   EvServer *ev_server;
 };

@@ -16,6 +16,8 @@
 #include "common.h"
 #include "ttcp_libev_test.h"
 
+#define assert__(x) for (; !(x); assert(x))
+
 const int MAX_RECEIVE_LENGTH = 1024 * 1024 * 10; // 10MB
 
 int setnonblock(int fd) {
@@ -62,13 +64,12 @@ static void client_state_cb(struct ev_loop *loop, ev_io *w, int revents) {
   auto &session_message = ev_client->session_message;
   ev_client->interrupt_count++;
 
-  size_t rb = 0;
-
   for (;;) {
     if (ev_client->recv_state == kExpectFrameSize) {
       if (gkrbs(ev_client->fd) >= sizeof(SessionMessage)) {
-        rb = read(ev_client->fd, (char *)&session_message,
-                  sizeof(session_message));
+        ssize_t rb = read(ev_client->fd, (char *)&session_message,
+                          sizeof(session_message));
+        assert(rb >= 0);
         assert(rb == sizeof(session_message));
         session_message.number = ntohl(session_message.number);
         session_message.length = ntohl(session_message.length);
@@ -94,12 +95,30 @@ static void client_state_cb(struct ev_loop *loop, ev_io *w, int revents) {
     } else if (ev_client->recv_state == kExceptFrame) {
       // TODO: user level buffer
       const size_t total_len = sizeof(int32_t) + size_t(session_message.length);
-      if (gkrbs(ev_client->fd) >= total_len) {
-        rb = read(ev_client->fd, ev_client->buffer, total_len);
-        assert(rb == total_len);
 
-        int *header4_bytes = (int *)ev_client->buffer;
-        assert(ntohl(*header4_bytes) == size_t(session_message.length));
+      if (1) {
+        // if (gkrbs(ev_client->fd) >= total_len) {
+        ssize_t rb = read(ev_client->fd, ev_client->buffer, total_len);
+
+        if (rb < 0) {
+          break;
+        }
+
+        assert__(rb >= 0) { perror("read"); };
+
+        size_t rbt = rb;
+        assert(rbt <= total_len && rbt > 0);
+
+        ev_client->current_recv_bytes += rbt;
+
+        if (ev_client->current_recv_bytes >= total_len) {
+          ev_client->current_recv_bytes -= total_len;
+        } else {
+          break;
+        }
+
+        // int *header4_bytes = (int *)ev_client->buffer;
+        // assert(ntohl(*header4_bytes) == size_t(session_message.length));
 
         int wb = write(ev_client->fd, &ev_client->ack, sizeof(ev_client->ack));
         assert(wb == sizeof(ev_client->ack));
