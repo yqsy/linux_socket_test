@@ -32,11 +32,13 @@ public:
     vec[1].iov_len = sizeof(extrabuf);
 
     sszie n = readv(fd, vec, 2);
-    assert(n < 0);
+    assert(n > 0);
+
+    // read first buf
     if (n <= writeable) {
-      write_index += n;
+
     } else {
-      //
+      // read first and extra buf
     }
   }
 
