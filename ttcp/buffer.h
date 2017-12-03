@@ -20,7 +20,7 @@ public:
 
   char *begin() { return &*buffer_.begin(); }
 
-  char *begin_write(return &*buffer_.begin() + write_index_);
+  char *begin_write() { return &*buffer_.begin() + write_index_; };
 
   ssize_t readfd(int fd) {
     char extrabuf[65536];
@@ -31,15 +31,15 @@ public:
     vec[1].iov_base = extrabuf;
     vec[1].iov_len = sizeof(extrabuf);
 
-    sszie n = readv(fd, vec, 2);
-    assert(n > 0);
+    ssize_t n = readv(fd, vec, 2);
+    // assert(n > 0);
 
-    // read first buf
-    if (n <= writeable) {
+    // // read first buf
+    // if (n <= writeable) {
 
-    } else {
-      // read first and extra buf
-    }
+    // } else {
+    //   // read first and extra buf
+    // }
   }
 
   void ensure_writeable_bytes(size_t len) {}
