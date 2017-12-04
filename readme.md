@@ -149,6 +149,9 @@ tcp   968076      0 127.0.0.1:5001          127.0.0.1:36946         ESTABLISHED 
 # 5. 其他相关
 
 ```bash
+# 生成debug makefile(默认release)
+cmake -DCMAKE_BUILD_TYPE=Debug .
+
 # 查看cmake生成的链接选项
 find . -type f -name 'link.txt' -print0 | xargs -0  grep -in '/usr/bin/'
 
