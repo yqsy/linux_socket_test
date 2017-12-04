@@ -153,7 +153,7 @@ tcp   968076      0 127.0.0.1:5001          127.0.0.1:36946         ESTABLISHED 
 find . -type f -name 'link.txt' -print0 | xargs -0  grep -in '/usr/bin/'
 
 # 查看cmake生成的编译选项
-find . -type f -name '*' -print0 | xargs -0  grep -in 'build flags'
+grep -r '\-Wno\-unused\-parameter'
 
 # 好像最终的编译选项在下面的二进制文件里
 ./CMakeFiles/2.8.12.2/CompilerIdCXX/a.out
