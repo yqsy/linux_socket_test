@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <iostream>
+
 #include <boost/program_options.hpp>
 
 #include "common.h"

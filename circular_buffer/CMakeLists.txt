@@ -1,0 +1,2 @@
+add_executable(circular_buffer circular_buffer.cpp)
+target_link_libraries(circular_buffer boost_unit_test_framework)
