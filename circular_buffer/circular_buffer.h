@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <boost/noncopyable.hpp>
+#include <boost/utility/string_ref.hpp>
 
 class CircularBuffer : public boost::noncopyable {
 public:
@@ -45,6 +46,8 @@ public:
     read_idx_ = next;
     return 1;
   }
+
+  size_t push(boost::string_ref ele) { return 0; }
 
   size_t size() {
     if (read_idx_ == write_idx_) {
