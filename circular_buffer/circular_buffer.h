@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 
+#include <algorithm>
 #include <vector>
 
 #include <boost/noncopyable.hpp>
@@ -30,6 +31,7 @@ public:
     return 1;
   }
 
+  // One ele
   size_t pop(char *ele) {
     if (read_idx_ == write_idx_) {
       return 0;
@@ -47,7 +49,22 @@ public:
     return 1;
   }
 
-  size_t push(boost::string_ref ele) { return 0; }
+  size_t push(boost::string_ref ele) {
+    if (free_space_size() < ele.length()) {
+      buffer_.resize(ele.length() - free_space_size() + buffer_.size());
+    }
+
+    for (size_t i = 0; i < ele.length(); ++i) {
+      push(ele[i]);
+    }
+
+    return ele.length();
+  }
+
+  size_t free_space_size() {
+    // One element needs to be occupied so -1
+    return buffer_.size() - size() - 1;
+  }
 
   size_t size() {
     if (read_idx_ == write_idx_) {
