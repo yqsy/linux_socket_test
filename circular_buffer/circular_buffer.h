@@ -49,9 +49,9 @@ public:
     return 1;
   }
 
-  size_t push(boost::string_ref ele) {
-    if (free_space_size() < ele.length()) {
-      buffer_.resize(ele.length() - free_space_size() + buffer_.size());
+  size_t push_str(boost::string_ref ele) {
+    if (writeable_bytes() < ele.length()) {
+      buffer_.resize(ele.length() - writeable_bytes() + buffer_.size());
     }
 
     for (size_t i = 0; i < ele.length(); ++i) {
@@ -61,12 +61,20 @@ public:
     return ele.length();
   }
 
-  size_t free_space_size() {
-    // One element needs to be occupied so -1
-    return buffer_.size() - size() - 1;
+  void retrieve(size_t len) {
+    if (len <= readable_bytes()) {
+      read_idx_ += len;
+    } else {
+      assert(0);
+    }
   }
 
-  size_t size() {
+  size_t writeable_bytes() {
+    // One element needs to be occupied so -1
+    return buffer_.size() - readable_bytes() - 1;
+  }
+
+  size_t readable_bytes() {
     if (read_idx_ == write_idx_) {
       return 0;
     } else if (write_idx_ > read_idx_) {

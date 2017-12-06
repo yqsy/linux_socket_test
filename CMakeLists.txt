@@ -48,7 +48,7 @@ message ("${CMAKE_BUILD_TYPE}")
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
 message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_${BUILD_TYPE}})
 
-#add_subdirectory(ttcp)
+add_subdirectory(ttcp)
 add_subdirectory(circular_buffer)
 
 #add_subdirectory(ptrtest)
