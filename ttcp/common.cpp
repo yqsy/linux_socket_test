@@ -54,7 +54,7 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
     po::options_description subdesc("");
     // clang-format off
     subdesc.add_options()
-      ("help,h", "Help")
+      ("help", "Help")
       ("host,h", po::value<std::string>(&opt->listen_host)->default_value("127.0.0.1"), "listen_host")
       ("port,p", po::value<uint16_t>(&opt->listen_port)->default_value(5001), "listen_port")
       ;
@@ -69,7 +69,7 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
     po::options_description subdesc("");
     // clang-format off
     subdesc.add_options()
-      ("help,h", "Help")
+      ("help", "Help")
       ("host,h", po::value<std::string>(&opt->server_host)->default_value("127.0.0.1"), "server_host")
       ("port,p", po::value<uint16_t>(&opt->server_port)->default_value(5001), "server_port")
       ("number,n", po::value<int>(&opt->buffer_number)->default_value(8192), "buffer_number")
