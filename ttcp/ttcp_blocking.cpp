@@ -94,7 +94,7 @@ int read_n(int sockfd, void *buf, int length) {
 }
 
 void server_receive(const Options &opt) {
-  printf("listening on %s %d\n", opt.listen_host.c_str(), opt.listen_port);
+  printf("listening on :%d\n", opt.listen_port);
 
   int sockfd = accept_or_die(opt.listen_port);
 

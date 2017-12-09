@@ -17,7 +17,7 @@ struct Options {
   Command command;
 
   // server
-  std::string listen_host;
+  // std::string listen_host;
   uint16_t listen_port;
 
   // client

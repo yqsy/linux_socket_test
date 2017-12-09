@@ -60,7 +60,7 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
     // clang-format off
     subdesc.add_options()
       ("help", "Help")
-      ("host,h", po::value<std::string>(&opt->listen_host)->default_value("127.0.0.1"), "listen_host")
+      //("host,h", po::value<std::string>(&opt->listen_host)->default_value("127.0.0.1"), "listen_host")
       ("port,p", po::value<uint16_t>(&opt->listen_port)->default_value(5001), "listen_port")
       ;
     // clang-format on
