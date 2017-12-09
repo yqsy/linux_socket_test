@@ -1,6 +1,10 @@
 #include <ttcp/common.h>
 
+#include <netdb.h>
+
 #include <iostream>
+
+const int MAX_BUFFER_LENGTH = 1024 * 1024 * 10; // MAX 10 M
 
 bool pase_sub_desc(const po::parsed_options &parsed,
                    const po::options_description &subdesc) {
@@ -11,6 +15,7 @@ bool pase_sub_desc(const po::parsed_options &parsed,
 
   opts.erase(opts.begin());
   po::store(po::command_line_parser(opts).options(subdesc).run(), sub_vm);
+  po::notify(sub_vm);
 
   if (sub_vm.count("help")) {
     std::cout << subdesc << std::endl;
@@ -72,15 +77,15 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
       ("help", "Help")
       ("host,h", po::value<std::string>(&opt->server_host)->default_value("127.0.0.1"), "server_host")
       ("port,p", po::value<uint16_t>(&opt->server_port)->default_value(5001), "server_port")
-      ("number,n", po::value<int>(&opt->buffer_number)->default_value(8192), "buffer_number")
-      ("length,l", po::value<int>(&opt->buffer_length)->default_value(65536), "buffer_length")
+      ("number,n", po::value<int>(&opt->number)->default_value(8192), "buffer_number")
+      ("length,l", po::value<int>(&opt->length)->default_value(65536), "buffer_length")
       ;
     // clang-format on
 
     if (!pase_sub_desc(parsed, subdesc))
       return false;
 
-    opt->command = k_server;
+    opt->command = k_client;
 
   } else {
     std::cout << desc << std::endl;
@@ -88,4 +93,20 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
   }
 
   return true;
+}
+
+struct sockaddr_in resolve_or_die(const char *host, uint16_t port) {
+  struct hostent *he = ::gethostbyname(host);
+
+  if (!he) {
+    perror("gethostbyname");
+    exit(1);
+  }
+
+  assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr = *reinterpret_cast<struct in_addr *>(he->h_addr);
+  return addr;
 }
