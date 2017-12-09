@@ -88,6 +88,44 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire2) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 0);
 }
 
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_cycle_general) {
+  CircularBuffer circular_buffer;
+  circular_buffer.push_str(std::string(2047, '1'));
+  BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 2047);
+  BOOST_CHECK_EQUAL(circular_buffer.writeable_bytes(), 0);
+
+  circular_buffer.retrieve(1024);
+
+  BOOST_CHECK_EQUAL(circular_buffer.read_idx_, 1024);
+
+  // r idx == 1024
+
+  circular_buffer.push_str(std::string(513, '1'));
+
+  BOOST_CHECK_EQUAL(circular_buffer.write_idx_, 512);
+  // w idx == 512
+
+  // now w < r
+  BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(),
+                    2047 - 1024 + 1 + 511 - 0 + 1);
+
+  // 1 ele can be stored
+  circular_buffer.push_str(std::string(1, '1'));
+  BOOST_CHECK_EQUAL(circular_buffer.write_idx_, 513);
+
+  BOOST_CHECK_EQUAL(circular_buffer.writeable_bytes(), 1022 - 513 + 1); // 510
+
+  circular_buffer.push_str(std::string(510, '1'));
+
+  BOOST_CHECK_EQUAL(circular_buffer.write_idx_, 1023);
+  BOOST_CHECK_EQUAL(circular_buffer.read_idx_, 1024);
+
+  circular_buffer.push_str(std::string(1, '1'));
+
+  BOOST_CHECK_EQUAL(circular_buffer.read_idx_, 0);
+  BOOST_CHECK_EQUAL(circular_buffer.write_idx_, (2047 - 1023 + 1) + 1022 + 1);
+}
+
 BOOST_AUTO_TEST_CASE(test_CircularBuffer_read) {
   CircularBuffer circular_buffer;
 

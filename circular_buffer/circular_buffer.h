@@ -58,17 +58,11 @@ public:
 
   size_t push_str(boost::string_ref ele) {
     if (writeable_bytes() < ele.length()) {
-
       size_t old_buffer_size = buffer_.size();
-
       size_t make_size = ele.length() - writeable_bytes() + buffer_.size();
 
-      buffer_.resize(make_size);
-
-      assert(buffer_.size() == make_size);
-
       if (write_idx_ < read_idx_) {
-        std::vector<char> new_buffer(buffer_.size());
+        std::vector<char> new_buffer(make_size);
 
         std::copy(std::next(buffer_.begin(), read_idx_), buffer_.end(),
                   new_buffer.begin());
@@ -79,6 +73,9 @@ public:
         read_idx_ = 0;
 
         new_buffer.swap(buffer_);
+      } else {
+        buffer_.resize(make_size);
+        assert(buffer_.size() == make_size);
       }
     }
 
@@ -141,6 +138,8 @@ private:
 
   size_t readable_bytes_;
 
+public:
+  // for unit test
   size_t read_idx_;
   size_t write_idx_;
 };
