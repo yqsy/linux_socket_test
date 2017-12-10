@@ -1,0 +1,2 @@
+add_executable(tbuf_test tbuf.cpp tbuf_unittest.cpp)
+target_link_libraries(tbuf_test boost_unit_test_framework)
