@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include <circular_buffer/circular_buffer.h>
+#include <tbuf/tbuf.h>
 #include <ttcp/common.h>
 
 struct EvClient;
@@ -21,7 +21,7 @@ struct EvClient {
   RecvState state;
   int read_number;
   EvServer *server_;
-  CircularBuffer input_buffer;
+  Tbuf input_buffer;
   SessionMessage smsg;
 
   EvClient(EvServer *server)
@@ -99,7 +99,9 @@ void client_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
   auto &smsg = ev_client->smsg;
   auto &input_buffer = ev_client->input_buffer;
 
-  input_buffer.readfd(ev_client->fd);
+  ssize_t n = input_buffer.readfd(ev_client->fd);
+  assert(n > 0);
+  // what need do when equal 0 or <0 ???
 
   for (;;) {
     if (ev_client->state == k_except_frame_size) {

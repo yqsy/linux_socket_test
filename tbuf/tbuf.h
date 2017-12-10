@@ -4,9 +4,11 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/uio.h>
 
 #include <vector>
 
+#include <boost/implicit_cast.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/utility/string_ref.hpp>
 
@@ -77,6 +79,34 @@ public:
       ridx_ = 0;
       widx_ = 0;
     }
+  }
+
+  // >0 readed bytes
+  // =0 need to be close???
+  // <0 error
+  ssize_t readfd(int fd) {
+
+    char extrabuf[65536];
+    struct iovec vec[2];
+    const size_t writeable = writeable_bytes();
+
+    vec[0].iov_base = begin() + widx_;
+    vec[0].iov_len = writeable;
+    vec[1].iov_base = extrabuf;
+    vec[1].iov_len = sizeof(extrabuf);
+
+    const int iovcnt = (writeable < sizeof(extrabuf)) ? 2 : 1;
+
+    const ssize_t n = readv(fd, vec, iovcnt);
+    if (n < 0) {
+      // errno
+    } else if (boost::implicit_cast<size_t>(n) <= writeable) {
+      widx_ += n;
+    } else {
+      widx_ = buf_.size();
+      append(boost::string_ref(extrabuf, n - writeable));
+    }
+    return n;
   }
 
 private:
