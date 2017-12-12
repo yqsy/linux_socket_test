@@ -30,19 +30,19 @@ find_library(EV_LIBRARY NAMES ev)
 find_library(EVENT_LIBRARY NAMES event)
 find_library(PTHREAD_LIBRARY LIBRARY NAMES pthread)
 find_library(BOOSTTEST_LIBRARY NAMES boost_unit_test_framework)
+find_library(BOOST_SYSTEN NAMES boost_system)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR})
 
 link_directories(${Boost_LIBRARY_DIRS})
 
-
 message("${BOOSTPO_LIBRARY}")
 message("${BOOSTTEST_LIBRARY}")
 message("${EV_LIBRARY}")
 message("${EVENT_LIBRARY}")
 message("${PTHREAD_LIBRARY}")
-
+message("${BOOST_SYSTEN}")
 
 message ("${CMAKE_BUILD_TYPE}")
 string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
