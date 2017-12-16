@@ -32,8 +32,12 @@ void sender(const char *filename, tcp::socket *socket) {
   char buf[8192];
   size_t nr = 0;
   while ((nr = fread(buf, 1, sizeof(buf), fp)) > 0) {
-    boost::system::error_code ignored_error;
-    socket->write_some(boost::asio::buffer(buf, nr), ignored_error);
+    boost::system::error_code ec;
+    boost::asio::write(*socket, boost::asio::buffer(buf, nr), ec);
+    if (ec) {
+      std::cout << ec.message() << std::endl;
+      exit(1);
+    }
   }
 
   fclose(fp);
