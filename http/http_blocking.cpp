@@ -17,6 +17,7 @@
 
 #include <muduo/base/Logging.h>
 #include <muduo/base/TimeZone.h>
+#include <muduo/net/Buffer.h>
 
 void raw_print(char c) {
   const char *buf = NULL;
@@ -39,22 +40,30 @@ void raw_print(char c) {
 void accept_request(int client_fd) {
   LOG_INFO << "new client_fd = " << client_fd;
 
+  muduo::net::Buffer buf;
+
   while (true) {
-    char c;
-    ssize_t nr = read(client_fd, &c, 1);
+
+    int saved_errno = 0;
+    ssize_t nr = buf.readFd(client_fd, &saved_errno);
+
     if (nr < 0) {
-      if (errno == EINTR) {
+      if (saved_errno == EINTR) {
         continue;
       } else {
-        LOG_ERROR << "read" << strerror(errno);
+        LOG_ERROR << "read" << strerror(saved_errno);
         break;
       }
     } else if (nr == 0) {
       LOG_INFO << "eof client_fd = " << client_fd;
       break;
     } else {
-      raw_print(c);
-      // FIXME: move to buffer
+
+      const char *p = buf.peek();
+      for (size_t i = 0; i < buf.readableBytes(); ++i) {
+        raw_print(p[i]);
+      }
+      buf.retrieveAll();
     }
   }
 
@@ -62,8 +71,8 @@ void accept_request(int client_fd) {
     LOG_ERROR << "shutdown" << strerror(errno);
   }
 
-  char buf[1024];
-  while (read(client_fd, buf, sizeof(buf)) > 0) {
+  char ignore[1024];
+  while (read(client_fd, ignore, sizeof(ignore)) > 0) {
     // do nothing
   }
 

@@ -2,6 +2,7 @@
 
 - [1. 资料](#1-资料)
 - [2. 流程](#2-流程)
+- [3. 简单的请求报文](#3-简单的请求报文)
 
 <!-- /TOC -->
 
@@ -30,3 +31,19 @@
 7. If you're going to support HTTP 1.1, implement things like "100 Continue", keep-alive, chunked transfer.
 8. Add robustness/security measures like detecting incomplete requests, limiting max number of clients etc.
 9. Shrink wrap your code and open-source it :)
+
+
+<a id="markdown-3-简单的请求报文" name="3-简单的请求报文"></a>
+# 3. 简单的请求报文
+
+```
+GET /123/123 HTTP/1.1\r\n
+Host: vm1:50000\r\n
+Connection: keep-alive\r\n
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36\r\n
+Upgrade-Insecure-Requests: 1\r\n
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\r\n
+Accept-Encoding: gzip, deflate\r\n
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
+\r\n
+```
