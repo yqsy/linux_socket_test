@@ -8,11 +8,17 @@
 
 namespace po = boost::program_options;
 
-enum Command { k_server, k_client, k_none };
+enum Command
+{
+  k_server,
+  k_client,
+  k_none
+};
 
 extern const int MAX_BUFFER_LENGTH;
 
-struct Options {
+struct Options
+{
   // option
   Command command;
 
@@ -28,12 +34,14 @@ struct Options {
   Options() : command(k_none), number(0), length(0) {}
 };
 
-struct SessionMessage {
+struct SessionMessage
+{
   int32_t number;
   int32_t length;
 } __attribute__((__packed__));
 
-struct PayloadMessage {
+struct PayloadMessage
+{
   int32_t length;
   char data[0];
 };

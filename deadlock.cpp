@@ -8,7 +8,8 @@ int b = 0;
 pthread_mutex_t mutex_a;
 pthread_mutex_t mutex_b;
 
-void *another(void *arg) {
+void *another(void *arg)
+{
   pthread_mutex_lock(&mutex_b);
   printf("in child thread,got mutex b,waiting for mutex a\n");
   sleep(5);
@@ -20,7 +21,8 @@ void *another(void *arg) {
   pthread_exit(NULL);
 }
 
-int main() {
+int main()
+{
   pthread_t id;
   pthread_mutex_init(&mutex_a, NULL);
   pthread_mutex_init(&mutex_b, NULL);

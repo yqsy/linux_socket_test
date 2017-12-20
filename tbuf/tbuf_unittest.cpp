@@ -10,7 +10,8 @@
 #include <boost/test/unit_test.hpp>
 
 // 普通的的测试
-BOOST_AUTO_TEST_CASE(test_tbuf_simple) {
+BOOST_AUTO_TEST_CASE(test_tbuf_simple)
+{
   Tbuf tbuf;
   BOOST_CHECK_EQUAL(tbuf.writeable_bytes(), 1024);
   BOOST_CHECK_EQUAL(tbuf.readable_bytes(), 0);
@@ -20,7 +21,8 @@ BOOST_AUTO_TEST_CASE(test_tbuf_simple) {
 }
 
 // 缓冲区增长
-BOOST_AUTO_TEST_CASE(test_tbuf_grow) {
+BOOST_AUTO_TEST_CASE(test_tbuf_grow)
+{
   Tbuf tbuf;
   BOOST_CHECK_EQUAL(tbuf.writeable_bytes(), 1024);
   BOOST_CHECK_EQUAL(tbuf.readable_bytes(), 0);
@@ -35,7 +37,8 @@ BOOST_AUTO_TEST_CASE(test_tbuf_grow) {
 }
 
 // 缓冲区腾挪
-BOOST_AUTO_TEST_CASE(test_tbuf_move) {
+BOOST_AUTO_TEST_CASE(test_tbuf_move)
+{
   Tbuf tbuf;
   BOOST_CHECK_EQUAL(tbuf.writeable_bytes(), 1024);
   BOOST_CHECK_EQUAL(tbuf.readable_bytes(), 0);
@@ -54,7 +57,8 @@ BOOST_AUTO_TEST_CASE(test_tbuf_move) {
 }
 
 // 读网络字节序
-BOOST_AUTO_TEST_CASE(test_tbuf_readint) {
+BOOST_AUTO_TEST_CASE(test_tbuf_readint)
+{
   Tbuf tbuf;
   int32_t n1 = 65536;
   n1 = htonl(n1);

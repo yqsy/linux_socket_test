@@ -10,7 +10,8 @@ ev_timer timeout_watcher;
 
 // all watcher callbacks have a similar signature
 // this callback is called when data is readable on stdin
-static void stdin_cb(EV_P_ ev_io *w, int revents) {
+static void stdin_cb(EV_P_ ev_io *w, int revents)
+{
   puts("stdin ready");
   // for one-shot events, one must manually stop the watcher
   // with its corresponding stop function.
@@ -21,13 +22,15 @@ static void stdin_cb(EV_P_ ev_io *w, int revents) {
 }
 
 // another callback, this time for a time-out
-static void timeout_cb(EV_P_ ev_timer *w, int revents) {
+static void timeout_cb(EV_P_ ev_timer *w, int revents)
+{
   puts("timeout");
   // this causes the innermost ev_run to stop iterating
   ev_break(EV_A_ EVBREAK_ONE);
 }
 
-int main(void) {
+int main(void)
+{
   // use the default event loop unless you have special needs
   struct ev_loop *loop = EV_DEFAULT;
 

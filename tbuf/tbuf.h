@@ -12,7 +12,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/utility/string_ref.hpp>
 
-class Tbuf : public boost::noncopyable {
+class Tbuf : public boost::noncopyable
+{
 public:
   static const int k_init_size = 1024;
 
@@ -32,15 +33,20 @@ public:
 
   const char *begin() const { return &*buf_.begin(); };
 
-  void append(boost::string_ref str) {
-    if (str.size() > writeable_bytes()) {
-      if (str.size() <= writeable_bytes() + prependable_bytes()) {
+  void append(boost::string_ref str)
+  {
+    if (str.size() > writeable_bytes())
+    {
+      if (str.size() <= writeable_bytes() + prependable_bytes())
+      {
         // transfer
         size_t transfer_size = readable_bytes();
         std::copy(begin() + ridx_, begin() + widx_, begin());
         ridx_ = 0;
         widx_ = 0 + transfer_size;
-      } else {
+      }
+      else
+      {
         // resize
 
         // capacity grows exponentiallyexponentially, possible to not allocate
@@ -59,23 +65,29 @@ public:
 
   const char *peek() const { return begin() + ridx_; }
 
-  int32_t peek_int32() const {
+  int32_t peek_int32() const
+  {
     int32_t rtn;
     memcpy(&rtn, peek(), sizeof(rtn));
     return ntohl(rtn);
   }
 
-  int32_t read_int32() {
+  int32_t read_int32()
+  {
     int32_t rtn = peek_int32();
     retrieve(sizeof(rtn));
     return rtn;
   }
 
-  void retrieve(size_t len) {
+  void retrieve(size_t len)
+  {
     assert(len <= readable_bytes());
-    if (len < readable_bytes()) {
+    if (len < readable_bytes())
+    {
       ridx_ += len;
-    } else {
+    }
+    else
+    {
       ridx_ = 0;
       widx_ = 0;
     }
@@ -84,7 +96,8 @@ public:
   // >0 readed bytes
   // =0 need to be close???
   // <0 error
-  ssize_t readfd(int fd) {
+  ssize_t readfd(int fd)
+  {
 
     char extrabuf[65536];
     struct iovec vec[2];
@@ -98,11 +111,16 @@ public:
     const int iovcnt = (writeable < sizeof(extrabuf)) ? 2 : 1;
 
     const ssize_t n = readv(fd, vec, iovcnt);
-    if (n < 0) {
+    if (n < 0)
+    {
       // errno
-    } else if (boost::implicit_cast<size_t>(n) <= writeable) {
+    }
+    else if (boost::implicit_cast<size_t>(n) <= writeable)
+    {
       widx_ += n;
-    } else {
+    }
+    else
+    {
       widx_ = buf_.size();
       append(boost::string_ref(extrabuf, n - writeable));
     }

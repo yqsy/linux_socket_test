@@ -8,8 +8,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main(int argc, char *argv[]) {
-  if (argc <= 2) {
+int main(int argc, char *argv[])
+{
+  if (argc <= 2)
+  {
     printf("usage:%s ip_address port_number\n", basename(argv[0]));
     return 1;
   }
@@ -29,9 +31,12 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in client;
   socklen_t client_addrlength = sizeof(client);
   int connfd = accept(sock, (struct sockaddr *)&client, &client_addrlength);
-  if (connfd < 0) {
+  if (connfd < 0)
+  {
     printf("errno is:%d\n", errno);
-  } else {
+  }
+  else
+  {
     close(STDOUT_FILENO);
     dup(connfd);
     printf("abcd\n");

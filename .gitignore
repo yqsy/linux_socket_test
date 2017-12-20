@@ -40,7 +40,7 @@
 /cmake-build-debug
 /.vscode
 /sync.sh
-/.clang-format
+#/.clang-format
 
 
 

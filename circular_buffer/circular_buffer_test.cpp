@@ -11,7 +11,8 @@
 
 #include "circular_buffer.h"
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_push) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_push)
+{
   CircularBuffer circular_buffer;
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 0);
   circular_buffer.push(1);
@@ -20,12 +21,14 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_push) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 2);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_pushmax) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_pushmax)
+{
   CircularBuffer circular_buffer;
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 0);
 
   // max = 1023: size() - 1
-  for (size_t i = 0; i < 1023; ++i) {
+  for (size_t i = 0; i < 1023; ++i)
+  {
     circular_buffer.push(1);
   }
 
@@ -34,7 +37,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_pushmax) {
   BOOST_CHECK_EQUAL(circular_buffer.push(1), 0);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_str) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_str)
+{
   CircularBuffer circular_buffer;
   circular_buffer.push_str(std::string(1023, '1'));
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 1023);
@@ -46,7 +50,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_str) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 3 * 1023);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_pop) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_pop)
+{
   CircularBuffer circular_buffer;
   circular_buffer.push(1);
   circular_buffer.push(2);
@@ -54,13 +59,15 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_pop) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 1);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_writeable_bytes) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_writeable_bytes)
+{
   CircularBuffer circular_buffer;
   // default 1024
   BOOST_CHECK_EQUAL(circular_buffer.writeable_bytes(), 1023);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire)
+{
   CircularBuffer circular_buffer;
   circular_buffer.push_str(std::string(1023, '1'));
 
@@ -77,7 +84,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire) {
   BOOST_CHECK_EQUAL(circular_buffer.writeable_bytes(), 2 * 1023);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire2) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire2)
+{
   CircularBuffer circular_buffer;
   circular_buffer.push_str(std::string(8, '1'));
   circular_buffer.retrieve(8);
@@ -88,7 +96,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_retire2) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 0);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_cycle_general) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_cycle_general)
+{
   CircularBuffer circular_buffer;
   circular_buffer.push_str(std::string(2047, '1'));
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 2047);
@@ -126,7 +135,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_cycle_general) {
   BOOST_CHECK_EQUAL(circular_buffer.write_idx_, (2047 - 1023 + 1) + 1022 + 1);
 }
 
-BOOST_AUTO_TEST_CASE(test_CircularBuffer_read) {
+BOOST_AUTO_TEST_CASE(test_CircularBuffer_read)
+{
   CircularBuffer circular_buffer;
 
   int32_t n1 = 65536;
@@ -140,7 +150,8 @@ BOOST_AUTO_TEST_CASE(test_CircularBuffer_read) {
   BOOST_CHECK_EQUAL(circular_buffer.readable_bytes(), 0);
 }
 
-BOOST_AUTO_TEST_CASE(test_stdcopy_copy) {
+BOOST_AUTO_TEST_CASE(test_stdcopy_copy)
+{
 
   const char *buffer = "123456";
   auto begin = &buffer[0];
@@ -151,12 +162,14 @@ BOOST_AUTO_TEST_CASE(test_stdcopy_copy) {
   BOOST_CHECK_EQUAL_COLLECTIONS(begin, end, outbuffer.begin(), outbuffer.end());
 }
 
-BOOST_AUTO_TEST_CASE(test_string_ref_length) {
+BOOST_AUTO_TEST_CASE(test_string_ref_length)
+{
   auto len = boost::string_ref("123456").length();
   BOOST_CHECK_EQUAL(len, 6);
 }
 
-BOOST_AUTO_TEST_CASE(capicty_test) {
+BOOST_AUTO_TEST_CASE(capicty_test)
+{
   std::vector<char> v(2048);
   BOOST_CHECK_EQUAL(v.size(), 2048);
 

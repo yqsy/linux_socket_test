@@ -3,7 +3,8 @@
 #include <muduo/net/TcpServer.h>
 
 // RFC 864
-class ChargenServer {
+class ChargenServer
+{
 public:
   ChargenServer(muduo::net::EventLoop *loop,
                 const muduo::net::InetAddress &listenAddr, bool print = false);

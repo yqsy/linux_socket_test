@@ -4,7 +4,8 @@
 
 int g1 = 1;
 
-int main() {
+int main()
+{
 
   fork();
 

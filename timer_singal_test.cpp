@@ -12,21 +12,25 @@
 
 // http://www.informit.com/articles/article.aspx?p=23618&seqNum=14
 
-void timer_handler(int signum) {
+void timer_handler(int signum)
+{
   static int count = 0;
   std::cout << "timer expired " << ++count
             << " timers tid: " << std::this_thread::get_id() << std::endl;
 }
 
-void sig_hanadler(int singo) {
-  if (singo == SIGINT) {
+void sig_hanadler(int singo)
+{
+  if (singo == SIGINT)
+  {
     std::cout << "recv SIGINT and thread id: " << std::this_thread::get_id()
               << std::endl;
     exit(0);
   }
 }
 
-int main() {
+int main()
+{
   std::cout << "main thread id: " << std::this_thread::get_id() << std::endl;
 
   struct sigaction sa;
@@ -46,7 +50,8 @@ int main() {
 
   signal(SIGINT, sig_hanadler);
 
-  while (1) {
+  while (1)
+  {
   }
 
   return 0;

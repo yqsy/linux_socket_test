@@ -13,9 +13,14 @@ struct EvServer;
 
 typedef std::shared_ptr<EvClient> EvClientPtr;
 
-enum RecvState { k_except_frame_size, k_except_frame };
+enum RecvState
+{
+  k_except_frame_size,
+  k_except_frame
+};
 
-struct EvClient {
+struct EvClient
+{
   ev_io io;
   int fd;
   RecvState state;
@@ -25,51 +30,63 @@ struct EvClient {
   SessionMessage smsg;
 
   EvClient(EvServer *server)
-      : fd(0), state(k_except_frame_size), read_number(0), server_(server) {
+      : fd(0), state(k_except_frame_size), read_number(0), server_(server)
+  {
     smsg.number = 0;
     smsg.length = 0;
   }
 };
 
-struct EvServer {
+struct EvServer
+{
   ev_io io;
   int fd;
   std::vector<EvClientPtr> ev_clients;
 
   EvServer() : fd(0) {}
 
-  void delete_client(const EvClient *ev_client) {
-    for (auto iter = ev_clients.begin(); iter != ev_clients.end();) {
-      if (&**iter == ev_client) {
+  void delete_client(const EvClient *ev_client)
+  {
+    for (auto iter = ev_clients.begin(); iter != ev_clients.end();)
+    {
+      if (&**iter == ev_client)
+      {
         iter = ev_clients.erase(iter);
         break;
-      } else {
+      }
+      else
+      {
         ++iter;
       }
     }
   }
 };
 
-int setnonblock(int fd) {
+int setnonblock(int fd)
+{
   int flags = fcntl(fd, F_GETFL);
   flags |= O_NONBLOCK;
   return fcntl(fd, F_SETFL, flags);
 }
 
-int get_listenfd_or_die(uint16_t port) {
+int get_listenfd_or_die(uint16_t port)
+{
   int listenfd = ::socket(AF_INET, SOCK_STREAM, 0);
-  if (listenfd < 0) {
+  if (listenfd < 0)
+  {
     perror("socket");
     exit(1);
   }
 
-  if (setnonblock(listenfd)) {
+  if (setnonblock(listenfd))
+  {
     perror("setnonblock");
     exit(1);
   }
 
   int yes = 1;
-  if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes))) {
+  if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)))
+  {
     perror("setsockopt");
     exit(1);
   }
@@ -80,13 +97,14 @@ int get_listenfd_or_die(uint16_t port) {
   addr.sin_port = htons(port);
   addr.sin_addr.s_addr = INADDR_ANY;
 
-  if (bind(listenfd, reinterpret_cast<struct sockaddr *>(&addr),
-           sizeof(addr))) {
+  if (bind(listenfd, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)))
+  {
     perror("bind");
     exit(1);
   }
 
-  if (listen(listenfd, 5)) {
+  if (listen(listenfd, 5))
+  {
     perror("listen");
     exit(1);
   }
@@ -94,7 +112,8 @@ int get_listenfd_or_die(uint16_t port) {
   return listenfd;
 }
 
-void client_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
+void client_read_cb(struct ev_loop *loop, ev_io *w, int revents)
+{
   auto ev_client = reinterpret_cast<EvClient *>(w);
   auto &smsg = ev_client->smsg;
   auto &input_buffer = ev_client->input_buffer;
@@ -103,9 +122,12 @@ void client_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
   assert(n > 0);
   // what need do when equal 0 or <0 ???
 
-  for (;;) {
-    if (ev_client->state == k_except_frame_size) {
-      if (input_buffer.readable_bytes() >= sizeof(smsg)) {
+  for (;;)
+  {
+    if (ev_client->state == k_except_frame_size)
+    {
+      if (input_buffer.readable_bytes() >= sizeof(smsg))
+      {
         smsg.number = input_buffer.read_int32();
         smsg.length = input_buffer.read_int32();
 
@@ -113,21 +135,28 @@ void client_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
                smsg.length);
 
         if (smsg.number <= 0 || smsg.length <= 0 ||
-            smsg.length > MAX_BUFFER_LENGTH) {
+            smsg.length > MAX_BUFFER_LENGTH)
+        {
           perror("read error length");
           exit(1);
         }
 
         ev_client->state = k_except_frame;
-      } else {
+      }
+      else
+      {
         break;
       }
-    } else if (ev_client->state == k_except_frame) {
+    }
+    else if (ev_client->state == k_except_frame)
+    {
       const unsigned int total_len =
           static_cast<int>(sizeof(int32_t)) + smsg.length;
-      if (input_buffer.readable_bytes() >= total_len) {
+      if (input_buffer.readable_bytes() >= total_len)
+      {
         int32_t payload_len = input_buffer.read_int32();
-        if (payload_len != smsg.length) {
+        if (payload_len != smsg.length)
+        {
           printf("payload_len read error = %d\n", payload_len);
           exit(1);
         }
@@ -138,33 +167,38 @@ void client_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
         ::write(ev_client->fd, &ack, sizeof(ack));
 
         ++ev_client->read_number;
-        if (ev_client->read_number >= smsg.number) {
+        if (ev_client->read_number >= smsg.number)
+        {
           // FIXME: shutdown
           close(ev_client->fd);
           ev_io_stop(loop, &ev_client->io);
           ev_client->server_->delete_client(ev_client);
         }
-
-      } else {
+      }
+      else
+      {
         break;
       }
     }
   }
 }
 
-void server_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
+void server_read_cb(struct ev_loop *loop, ev_io *w, int revents)
+{
   auto ev_server = reinterpret_cast<EvServer *>(w);
 
   auto ev_client = std::make_shared<EvClient>(ev_server);
 
   ev_client->fd = ::accept(ev_server->fd, NULL, NULL);
 
-  if (ev_client->fd < 0) {
+  if (ev_client->fd < 0)
+  {
     perror("accept");
     exit(1);
   }
 
-  if (setnonblock(ev_client->fd)) {
+  if (setnonblock(ev_client->fd))
+  {
     perror("setnonblock");
     exit(1);
   }
@@ -174,12 +208,14 @@ void server_read_cb(struct ev_loop *loop, ev_io *w, int revents) {
   ev_io_start(loop, &ev_client->io);
 }
 
-void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents) {
+void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
+{
   printf("exit\n");
   ev_break(loop, EVBREAK_ALL);
 }
 
-void server_receive(const Options &opt) {
+void server_receive(const Options &opt)
+{
   struct ev_loop *loop = ev_default_loop(0);
 
   // SIGINT
@@ -200,14 +236,18 @@ void server_receive(const Options &opt) {
 
 void client_send(const Options &opt) {}
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   Options options;
 
   parse_commandline(argc, argv, &options);
 
-  if (options.command == k_server) {
+  if (options.command == k_server)
+  {
     server_receive(options);
-  } else if (options.command == k_client) {
+  }
+  else if (options.command == k_client)
+  {
     client_send(options);
   }
 

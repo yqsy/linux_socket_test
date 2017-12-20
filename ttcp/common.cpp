@@ -7,7 +7,8 @@
 const int MAX_BUFFER_LENGTH = 1024 * 1024 * 10; // MAX 10 M
 
 bool pase_sub_desc(const po::parsed_options &parsed,
-                   const po::options_description &subdesc) {
+                   const po::options_description &subdesc)
+{
 
   po::variables_map sub_vm;
   std::vector<std::string> opts =
@@ -17,14 +18,16 @@ bool pase_sub_desc(const po::parsed_options &parsed,
   po::store(po::command_line_parser(opts).options(subdesc).run(), sub_vm);
   po::notify(sub_vm);
 
-  if (sub_vm.count("help")) {
+  if (sub_vm.count("help"))
+  {
     std::cout << subdesc << std::endl;
     return false;
   }
   return true;
 }
 
-bool parse_commandline(int argc, char *argv[], Options *opt) {
+bool parse_commandline(int argc, char *argv[], Options *opt)
+{
   po::options_description desc("Allowed options");
 
   // clang-format off
@@ -48,14 +51,16 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
   po::store(parsed, vm);
   // clang-format on
 
-  if (!vm.count("command")) {
+  if (!vm.count("command"))
+  {
     std::cout << desc << std::endl;
     return false;
   }
 
   std::string cmd = vm["command"].as<std::string>();
 
-  if (cmd == "server") {
+  if (cmd == "server")
+  {
     po::options_description subdesc("");
     // clang-format off
     subdesc.add_options()
@@ -69,8 +74,9 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
       return false;
 
     opt->command = k_server;
-
-  } else if (cmd == "client") {
+  }
+  else if (cmd == "client")
+  {
     po::options_description subdesc("");
     // clang-format off
     subdesc.add_options()
@@ -86,8 +92,9 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
       return false;
 
     opt->command = k_client;
-
-  } else {
+  }
+  else
+  {
     std::cout << desc << std::endl;
     return false;
   }
@@ -95,10 +102,12 @@ bool parse_commandline(int argc, char *argv[], Options *opt) {
   return true;
 }
 
-struct sockaddr_in resolve_or_die(const char *host, uint16_t port) {
+struct sockaddr_in resolve_or_die(const char *host, uint16_t port)
+{
   struct hostent *he = ::gethostbyname(host);
 
-  if (!he) {
+  if (!he)
+  {
     perror("gethostbyname");
     exit(1);
   }

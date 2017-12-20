@@ -10,7 +10,8 @@
 
 using boost::asio::ip::tcp;
 
-std::string make_daytime_string() {
+std::string make_daytime_string()
+{
   using namespace std; // For time_t, time and ctime;
   time_t now = time(0);
   return ctime(&now);
@@ -18,10 +19,12 @@ std::string make_daytime_string() {
 
 int16_t PORT = 5002;
 
-void sender(const char *filename, tcp::socket *socket) {
+void sender(const char *filename, tcp::socket *socket)
+{
 
   FILE *fp = fopen(filename, "rb");
-  if (!fp) {
+  if (!fp)
+  {
     return;
   }
 
@@ -31,10 +34,12 @@ void sender(const char *filename, tcp::socket *socket) {
   printf("Start sending file %s\n", filename);
   char buf[8192];
   size_t nr = 0;
-  while ((nr = fread(buf, 1, sizeof(buf), fp)) > 0) {
+  while ((nr = fread(buf, 1, sizeof(buf), fp)) > 0)
+  {
     boost::system::error_code ec;
     boost::asio::write(*socket, boost::asio::buffer(buf, nr), ec);
-    if (ec) {
+    if (ec)
+    {
       std::cout << ec.message() << std::endl;
       exit(1);
     }
@@ -48,15 +53,18 @@ void sender(const char *filename, tcp::socket *socket) {
   socket->shutdown(tcp::socket::shutdown_send);
 
   boost::system::error_code ignored_error;
-  while (socket->read_some(boost::asio::buffer(buf), ignored_error) > 0) {
+  while (socket->read_some(boost::asio::buffer(buf), ignored_error) > 0)
+  {
   }
 
   printf("All done.\n");
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 
-  if (argc < 2) {
+  if (argc < 2)
+  {
     printf("Usage: \n %s filename\n", argv[0]);
     return 0;
   }
@@ -66,7 +74,8 @@ int main(int argc, char *argv[]) {
   boost::asio::io_service io_service;
   tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), PORT));
 
-  for (;;) {
+  for (;;)
+  {
     tcp::socket socket(io_service);
     acceptor.accept(socket);
 

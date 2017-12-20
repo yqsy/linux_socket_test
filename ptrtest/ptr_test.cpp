@@ -2,7 +2,8 @@
 #include <memory>
 #include <thread>
 
-int main() {
+int main()
+{
   std::shared_ptr<int> p1(new int);
 
   std::cout << "p1: " << p1.use_count() << std::endl;
