@@ -56,6 +56,16 @@ void raw_print(char c)
 //   close(client_fd);
 // }
 
+void do_with_buffer(muduo::net::Buffer *buf, int client_fd)
+{
+  const char *p = buf->peek();
+  for (size_t i = 0; i < buf->readableBytes(); ++i)
+  {
+    raw_print(p[i]);
+  }
+  buf->retrieveAll();
+}
+
 void accept_request(int client_fd)
 {
   LOG_INFO << "new client_fd = " << client_fd;
@@ -67,22 +77,30 @@ void accept_request(int client_fd)
     int saved_errno = 0;
     ssize_t nr = buf.readFd(client_fd, &saved_errno);
 
-    // if (nr < 0) {
-    //   if (saved_errno == EINTR) {
-    //     continue;
-    //   } else {
-    //     LOG_ERROR << "read" << strerror(saved_errno);
-    //     break;
-    //   }
-    // } else if (nr == 0) {
-    //   break;
-    // } else {
-    //   const char *p = buf.peek();
-    //   for (size_t i = 0; i < buf.readableBytes(); ++i) {
-    //     raw_print(p[i]);
-    //   }
-    //   buf.retrieveAll();
-    // }
+    if (nr > 0)
+    {
+      do_with_buffer(&buf, client_fd);
+    }
+    else if (nr == 0)
+    {
+      // recv end of file, peer shutdown
+      if (buf.readableBytes() > 0)
+      {
+        LOG_WARN << "remain " << buf.readableBytes() << "bytes";
+      }
+
+      close(client_fd);
+      break;
+    }
+    else // nr < 0
+    {
+      if (saved_errno != EINTR)
+      {
+        // system error
+        LOG_ERROR << "read" << strerror(saved_errno);
+        break;
+      }
+    }
   }
 
   LOG_INFO << "done client_fd = " << client_fd;
