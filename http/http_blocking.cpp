@@ -11,75 +11,92 @@
 #include <unistd.h> // close
 
 #include <iostream>
+#include <memory>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
+#include <boost/noncopyable.hpp>
+#include <boost/progress.hpp>
+
 #include <muduo/base/Logging.h>
 #include <muduo/base/TimeZone.h>
+#include <muduo/base/Timestamp.h>
 #include <muduo/net/Buffer.h>
 
-void raw_print(char c)
+// RAII
+class Socket : boost::noncopyable
 {
-  const char *buf = NULL;
-  switch (c)
+public:
+  explicit Socket() : sockfd_(0) {}
+
+  ~Socket() { close(sockfd_); }
+
+public:
+  int sockfd_;
+};
+
+typedef std::shared_ptr<Socket> SocketPtr;
+
+void shutdown_close_fd(int client_fd)
+{
+  if (shutdown(client_fd, SHUT_WR) < 0)
   {
-  case '\r':
-    buf = "\\r";
-    break;
-  case '\n':
-    buf = "\\n\n";
-    break;
-  case EOF:
-    buf = "<EOF>";
-    break;
-  }
-  if (buf)
-  {
-    fwrite(buf, 1, strlen(buf), stdout);
-    return;
+    LOG_ERROR << "shutdown" << strerror(errno);
   }
 
-  fwrite(&c, 1, sizeof(c), stdout);
+  char ignore[1024];
+  while (read(client_fd, ignore, sizeof(ignore)) > 0)
+  {
+    // do nothing
+  }
 }
 
-// void safe_close_fd(int client_fd) {
-//   if (shutdown(client_fd, SHUT_WR) < 0) {
-//     LOG_ERROR << "shutdown" << strerror(errno);
-//   }
-
-//   char ignore[1024];
-//   while (read(client_fd, ignore, sizeof(ignore)) > 0) {
-//     // do nothing
-//   }
-
-//   close(client_fd);
-// }
-
-void do_with_buffer(muduo::net::Buffer *buf, int client_fd)
+int write_n(int sockfd, const void *buf, int length)
 {
-  const char *p = buf->peek();
-  for (size_t i = 0; i < buf->readableBytes(); ++i)
+  int written = 0;
+  while (written < length)
   {
-    raw_print(p[i]);
+    ssize_t nw = write(sockfd, static_cast<const char *>(buf) + written,
+                       length - written);
+    if (nw > 0)
+    {
+      written += static_cast<int>(nw);
+    }
+    else if (nw == 0)
+    {
+      break; // EOF
+    }
+    else if (errno != EINTR)
+    {
+      LOG_ERROR << "write" << strerror(errno);
+      break;
+    }
   }
-  buf->retrieveAll();
+  return written;
 }
 
-void accept_request(int client_fd)
+bool do_with_buffer(muduo::net::Buffer *buf, SocketPtr client_socket)
 {
-  LOG_INFO << "new client_fd = " << client_fd;
+  // TODO
+  return true;
+}
 
+void accept_request(SocketPtr client_socket)
+{
   muduo::net::Buffer buf;
 
   while (true)
   {
     int saved_errno = 0;
-    ssize_t nr = buf.readFd(client_fd, &saved_errno);
+    ssize_t nr = buf.readFd(client_socket->sockfd_, &saved_errno);
 
     if (nr > 0)
     {
-      do_with_buffer(&buf, client_fd);
+      if (!do_with_buffer(&buf, client_socket))
+      {
+        break;
+      }
     }
     else if (nr == 0)
     {
@@ -88,8 +105,6 @@ void accept_request(int client_fd)
       {
         LOG_WARN << "remain " << buf.readableBytes() << "bytes";
       }
-
-      close(client_fd);
       break;
     }
     else // nr < 0
@@ -102,8 +117,6 @@ void accept_request(int client_fd)
       }
     }
   }
-
-  LOG_INFO << "done client_fd = " << client_fd;
 }
 
 int get_listen_fd_or_die(uint16_t port)
@@ -155,7 +168,8 @@ int main(int argc, char *argv[])
 
   uint16_t port = atoi(argv[1]);
 
-  int listen_fd = get_listen_fd_or_die(port);
+  Socket listen_socket;
+  listen_socket.sockfd_ = get_listen_fd_or_die(port);
 
   LOG_INFO << "listening on port = " << port;
 
@@ -165,18 +179,19 @@ int main(int argc, char *argv[])
     bzero(&peer_addr, sizeof(peer_addr));
     socklen_t addrlen = 0;
 
-    int client_fd = accept(
-        listen_fd, reinterpret_cast<struct sockaddr *>(&peer_addr), &addrlen);
-    if (client_fd < 0)
+    SocketPtr client_socket = std::make_shared<Socket>();
+
+    client_socket->sockfd_ =
+        accept(listen_socket.sockfd_,
+               reinterpret_cast<struct sockaddr *>(&peer_addr), &addrlen);
+    if (client_socket->sockfd_ < 0)
     {
       LOG_FATAL << "accept" << strerror(errno);
     }
 
-    std::thread thr(accept_request, client_fd);
+    std::thread thr(accept_request, client_socket);
     thr.detach();
   }
-
-  close(listen_fd);
 
   return 0;
 }

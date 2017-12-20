@@ -74,10 +74,9 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
 <a id="markdown-4-我认为的难点" name="4-我认为的难点"></a>
 # 4. 我认为的难点
 
-我觉得写代码是一件需要认真的对待的事情,每一个敲入的字符都有它的意义,在时间允许范围之内追求完美的做法,在每个制作完美的过程中积累最佳实践的经验.当然个人的时间是有限的,需要参考权威的书籍/开源项目.尽能力追求到完美.每一个完美的积累将来都是复用的,不断的积累完美人的头脑会越来越清楚.
-
 * 阻塞I/O read时 <0,==0怎么处理
-* 阻塞I/O 一次read多少字节的数据,怎么做CRLF的判断,httpcontext的解析
+* 阻塞I/O 一次read多少字节的数据,怎么做CRLF的判断
+* http context的解析,用状态机
 
 <a id="markdown-5-benchmark" name="5-benchmark"></a>
 # 5. benchmark
@@ -92,5 +91,8 @@ ab [options] [http[s]://]hostname[:port]/path
 ab -n 2000 -c 25 http://127.0.0.1/
 
 # tinyhttpd
-# Requests per second:    2839.67 [#/sec] (mean)
+# Requests per second:    4228.45 [#/sec] (mean)
+
+# muduo-http example
+# Requests per second:    25514.43 [#/sec] (mean)
 ```

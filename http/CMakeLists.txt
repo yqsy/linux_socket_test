@@ -1,2 +1,2 @@
 add_executable(http_blocking http_blocking.cpp)
-target_link_libraries(http_blocking muduo_base_cpp11 muduo_net_cpp11 pthread)
+target_link_libraries(http_blocking muduo_base_cpp11 muduo_net_cpp11 muduo_http pthread)
