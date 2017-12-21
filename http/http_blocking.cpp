@@ -17,7 +17,6 @@
 #include <vector>
 
 #include <boost/noncopyable.hpp>
-#include <boost/progress.hpp>
 
 #include <muduo/base/Logging.h>
 #include <muduo/base/TimeZone.h>
