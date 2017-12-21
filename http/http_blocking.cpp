@@ -22,6 +22,8 @@
 #include <muduo/base/TimeZone.h>
 #include <muduo/net/Buffer.h>
 
+#include <http/http_context.h>
+
 // RAII
 class Socket : boost::noncopyable
 {
