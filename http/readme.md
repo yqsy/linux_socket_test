@@ -28,10 +28,11 @@
 * http://www.apuebook.com/ (apue看一下)
 * https://github.com/shihyu/Linux_Programming/blob/master/books/Advanced.Programming.in.the.UNIX.Environment.3rd.Edition.0321637739.pdf (apue 卷3)
 * https://github.com/shihyu/Linux_Programming/blob/master/books/UNIX%20Network%20Programming(Volume1%2C3rd).pdf (apue 卷1)
+* http://blog.51reboot.com/cgi-fastcgi-wsgi/ (cgi fastcgi wsgi)
 
 <a id="markdown-11-知乎" name="11-知乎"></a>
 ## 1.1. 知乎
-比如你做 web开发，你选一门语言，python，语言就做好语言的事情。外部的网络框架，可以用 django，flask, web.py等等，接口可以用 fastcg / cgi / wsgi / uwsgi / apache_mod, 而外部的服务器，可以用 apache, nginx, lighttpd。清晰的被分成：语言层、框架层、协议层、服务层 四个不同的层次，每个层次若干备选方案，互相兼容，web.py过时了，我换 flask，apache过时了，我换nginx。每个产品都专注做好自己的事情，并前后适配其他层次的方案，python出问题了，我换 ruby，换php，协议任然用 apache_mod或者 fastcgi，这就是每个层次都可以替换的设计。
+比如你做 web开发，你选一门语言，python，语言就做好语言的事情。外部的网络框架，可以用 django，flask, web.py等等，接口可以用 fastcgi / cgi / wsgi / uwsgi / apache_mod, 而外部的服务器，可以用 apache, nginx, lighttpd。清晰的被分成：语言层、框架层、协议层、服务层 四个不同的层次，每个层次若干备选方案，互相兼容，web.py过时了，我换 flask，apache过时了，我换nginx。每个产品都专注做好自己的事情，并前后适配其他层次的方案，python出问题了，我换 ruby，换php，协议任然用 apache_mod或者 fastcgi，这就是每个层次都可以替换的设计。
 
 
 <a id="markdown-12-可以参考开源项目" name="12-可以参考开源项目"></a>
