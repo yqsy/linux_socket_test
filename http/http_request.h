@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 #include <muduo/base/Types.h>
 
 using namespace muduo;
@@ -69,9 +71,28 @@ public:
     query_.assign(start, end);
   }
 
+  void add_header(const char *start, const char *colon, const char *end)
+  {
+    string field(start, colon);
+
+    colon++;
+    while (colon < end && isspace(*colon))
+    {
+      ++colon;
+    }
+
+    string value(colon, end);
+    while (!value.empty() && isspace(value[value.size() - 1]))
+    {
+      value.resize(value.size() - 1);
+    }
+    headers_[field] = value;
+  }
+
 private:
   Method method_;
   string path_;
   string query_;
   Version version_;
+  std::map<string, string> headers_;
 };

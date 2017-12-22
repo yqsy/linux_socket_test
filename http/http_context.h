@@ -19,7 +19,17 @@ public:
 
   bool parse_request(muduo::net::Buffer *buf);
 
+  // method path query version
   bool parse_first_line(const char *begin, const char *end);
+
+  bool got_all() { return state_ == kGotAll; }
+
+  void reset()
+  {
+    state_ = kExpectRequestLine;
+    HttpRequest request;
+    request_ = request;
+  }
 
 private:
   HttpRequestParseState state_;

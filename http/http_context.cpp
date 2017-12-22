@@ -70,6 +70,16 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
 
       if (crlf)
       {
+        if (parse_first_line(buf->peek(), crlf))
+        {
+          buf->retrieveUntil(crlf + 2);
+          state_ = kExpectHeaders;
+        }
+        else
+        {
+          // parse first line error
+          return false;
+        }
       }
       else
       {
@@ -82,6 +92,19 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
 
       if (crlf)
       {
+        const char *colon = std::find(buf->peek(), crlf, ':');
+        if (colon != crlf)
+        {
+          request_.add_header(buf->peek(), colon, crlf);
+          buf->retrieveUntil(crlf + 2);
+        }
+        else
+        {
+          // empty line
+          state_ = kGotAll;
+          buf->retrieveUntil(crlf + 2);
+          break;
+        }
       }
       else
       {
@@ -90,12 +113,14 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
     }
     else if (state_ == kExpectBody)
     {
+      // TODO
     }
     else // kGotAll
     {
       LOG_WARN << "kGotAll";
+      break;
     }
   }
 
-  return false;
+  return true;
 }
