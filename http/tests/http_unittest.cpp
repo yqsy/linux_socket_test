@@ -50,17 +50,24 @@ BOOST_AUTO_TEST_CASE(test_http_context_all)
   input.append("\n");
   BOOST_CHECK(http_context.parse_request(&input));
   BOOST_CHECK(http_context.got_all());
+}
 
-  http_context.reset();
-  BOOST_CHECK(input.readableBytes() == 0);
+BOOST_AUTO_TEST_CASE(test_http_context_all_value)
+{
+  // 测试每个字段的正确性
+}
 
-  input.append("GET /index.html HTTP/1.1\r\n"
-               "Host: www.chenshuo.com\r\n");
+BOOST_AUTO_TEST_CASE(test_http_context_onebyone)
+{
+  // 一个一个字节来
+}
 
-  BOOST_CHECK(http_context.parse_request(&input));
-  BOOST_CHECK(!http_context.got_all());
+BOOST_AUTO_TEST_CASE(test_http_context_two_piece)
+{
+  // 分成两部分
+}
 
-  input.append("\r\n");
-  BOOST_CHECK(http_context.parse_request(&input));
-  BOOST_CHECK(http_context.got_all());
+BOOST_AUTO_TEST_CASE(test_http_context_empyt_header_value)
+{
+  // 头部的value为空
 }
