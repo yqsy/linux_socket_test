@@ -1,8 +1,8 @@
-add_library(httplight http_context.cpp http_request.cpp)
+add_library(httplight http_context.cpp http_request.cpp http_response.cpp)
 target_link_libraries(httplight muduo_base_cpp11 muduo_net_cpp11 pthread)
 
 add_executable(http_unittest tests/http_unittest.cpp)
 target_link_libraries(http_unittest httplight muduo_base_cpp11 muduo_net_cpp11 pthread boost_unit_test_framework)
 
 add_executable(http_blocking http_blocking.cpp)
-target_link_libraries(http_blocking muduo_base_cpp11 muduo_net_cpp11 pthread)
+target_link_libraries(http_blocking httplight muduo_base_cpp11 muduo_net_cpp11 pthread)

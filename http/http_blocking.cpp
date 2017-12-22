@@ -10,6 +10,7 @@
 #include <sys/types.h> // some historical (BSD) implementations required this header file
 #include <unistd.h> // close
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -23,6 +24,8 @@
 #include <muduo/net/Buffer.h>
 
 #include <http/http_context.h>
+#include <http/http_request.h>
+#include <http/http_response.h>
 
 // RAII
 class Socket : boost::noncopyable
@@ -37,6 +40,27 @@ public:
 };
 
 typedef std::shared_ptr<Socket> SocketPtr;
+
+string raw_str(const string &ori)
+{
+  string result;
+  for (auto &c : ori)
+  {
+    if (c == '\r')
+    {
+      result += "\\r";
+    }
+    else if (c == '\n')
+    {
+      result += "\\n";
+    }
+    else
+    {
+      result += c;
+    }
+  }
+  return result;
+}
 
 void shutdown_close_fd(int client_fd)
 {
@@ -76,16 +100,71 @@ int write_n(int sockfd, const void *buf, int length)
   return written;
 }
 
-bool do_with_buffer(muduo::net::Buffer *buf, SocketPtr client_socket)
+bool do_with_buffer(muduo::net::Buffer *buf, HttpContext *context,
+                    SocketPtr client_socket)
 {
-  // TODO
+  if (!context->parse_request(buf))
+  {
+    LOG_WARN << "parse error shutdown buf[:10] = "
+             << raw_str(string(buf->peek(),
+                               std::min(size_t(10), buf->readableBytes())));
+    string err("HTTP/1.1 400 Bad Request\r\n\r\n");
+    write_n(client_socket->sockfd_, err.c_str(), err.size());
+    shutdown_close_fd(client_socket->sockfd_);
+    return false;
+  }
+
+  if (context->got_all())
+  {
+    const auto &request = context->request();
+
+    const string &connection = request.get_header("Connection");
+    bool close =
+        connection == "close" || (request.version() == HttpRequest::kHttp10 &&
+                                  connection != "Keep-Alive");
+
+    HttpResponse response(close);
+    // response.set_status_code(HttpResponse::k404NotFound);
+    // response.set_status_message("Not Found");
+    // response.set_close_connection(true);
+
+    response.set_status_code(HttpResponse::k200Ok);
+    response.set_status_message("OK");
+    response.set_content_type("text/plain");
+    response.set_body("hello world");
+
+    Buffer outbuf;
+    response.append_to_buffer(&outbuf);
+
+    int wn =
+        write_n(client_socket->sockfd_, outbuf.peek(), outbuf.readableBytes());
+
+    if (wn < 0)
+    {
+      LOG_ERROR << "write" << strerror(errno);
+    }
+    else if (static_cast<size_t>(wn) != outbuf.readableBytes())
+    {
+      LOG_ERROR << "wn = " << wn << " != " << outbuf.readableBytes();
+    }
+
+    outbuf.retrieveAll();
+
+    if (response.close_connection())
+    {
+      shutdown_close_fd(client_socket->sockfd_);
+    }
+
+    context->reset();
+  }
+
   return true;
 }
 
 void accept_request(SocketPtr client_socket)
 {
   muduo::net::Buffer buf;
-
+  HttpContext context;
   while (true)
   {
     int saved_errno = 0;
@@ -93,7 +172,7 @@ void accept_request(SocketPtr client_socket)
 
     if (nr > 0)
     {
-      if (!do_with_buffer(&buf, client_socket))
+      if (!do_with_buffer(&buf, &context, client_socket))
       {
         break;
       }

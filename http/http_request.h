@@ -59,12 +59,18 @@ public:
     return method_ != kInvalid;
   }
 
+  Method method() const { return method_; }
+
   void set_version(Version v) { version_ = v; }
+
+  Version version() const { return version_; }
 
   void set_path(const char *start, const char *end)
   {
     path_.assign(start, end);
   }
+
+  const string &path() const { return path_; }
 
   void set_query(const char *start, const char *end)
   {
@@ -87,6 +93,17 @@ public:
       value.resize(value.size() - 1);
     }
     headers_[field] = value;
+  }
+
+  string get_header(const string &field) const
+  {
+    string result;
+    auto it = headers_.find(field);
+    if (it != headers_.end())
+    {
+      result = it->second;
+    }
+    return result;
   }
 
 private:

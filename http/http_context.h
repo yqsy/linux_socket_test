@@ -1,5 +1,6 @@
 #pragma once
 
+#include <muduo/base/Types.h>
 #include <muduo/net/Buffer.h>
 
 #include <http/http_request.h>
@@ -22,7 +23,7 @@ public:
   // method path query version
   bool parse_first_line(const char *begin, const char *end);
 
-  bool got_all() { return state_ == kGotAll; }
+  bool got_all() const { return state_ == kGotAll; }
 
   void reset()
   {
@@ -30,6 +31,8 @@ public:
     HttpRequest request;
     request_ = request;
   }
+
+  const HttpRequest &request() const { return request_; }
 
 private:
   HttpRequestParseState state_;
