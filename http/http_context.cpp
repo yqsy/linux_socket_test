@@ -1,6 +1,11 @@
 #include <http/http_context.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include <muduo/base/Logging.h>
+
+using boost::bad_lexical_cast;
+using boost::lexical_cast;
 
 bool HttpContext::parse_first_line(const char *begin, const char *end)
 {
@@ -100,10 +105,18 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
         }
         else
         {
-          // empty line
-          state_ = kGotAll;
-          buf->retrieveUntil(crlf + 2);
-          break;
+          if (request_.get_header("Content-Length") != "")
+          {
+            state_ = kExpectBody;
+            buf->retrieveUntil(crlf + 2);
+          }
+          else
+          {
+            // empty line
+            state_ = kGotAll;
+            buf->retrieveUntil(crlf + 2);
+            break;
+          }
         }
       }
       else
@@ -113,7 +126,27 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
     }
     else if (state_ == kExpectBody)
     {
-      // TODO
+      // 剩余需要的body字节数
+      ssize_t remain_body_len = request_.get_remain_body_len();
+
+      if (static_cast<ssize_t>(buf->readableBytes()) > remain_body_len)
+      {
+        request_.append_body(string(buf->peek(), remain_body_len));
+        buf->retrieve(remain_body_len);
+
+        assert(request_.get_remain_body_len() == 0);
+      }
+      else
+      {
+        request_.append_body(string(buf->peek(), buf->readableBytes()));
+        buf->retrieveAll();
+      }
+
+      if (request_.get_remain_body_len() == 0)
+      {
+        state_ = kGotAll;
+      }
+      break;
     }
     else // kGotAll
     {

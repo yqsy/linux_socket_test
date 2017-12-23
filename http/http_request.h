@@ -2,9 +2,14 @@
 
 #include <map>
 
+#include <boost/lexical_cast.hpp>
+
 #include <muduo/base/Types.h>
 
 using namespace muduo;
+
+using boost::bad_lexical_cast;
+using boost::lexical_cast;
 
 class HttpRequest
 {
@@ -77,6 +82,8 @@ public:
     query_.assign(start, end);
   }
 
+  const string &query() const { return query_; }
+
   void add_header(const char *start, const char *colon, const char *end)
   {
     string field(start, colon);
@@ -106,10 +113,41 @@ public:
     return result;
   }
 
+  ssize_t get_expect_body_len() const
+  {
+    ssize_t expect_body_len = 0;
+
+    try
+    {
+      expect_body_len = lexical_cast<ssize_t>(get_header("Content-Length"));
+    }
+    catch (bad_lexical_cast &)
+    {
+      //
+      expect_body_len = 0;
+    }
+
+    return expect_body_len;
+  }
+
+  ssize_t get_remain_body_len() const
+  {
+    ssize_t expect_body_len = get_expect_body_len();
+    ssize_t current_body_len = body().size();
+
+    assert(expect_body_len >= current_body_len);
+    return expect_body_len - current_body_len;
+  }
+
+  void append_body(const string &body) { body_.append(body); }
+
+  const string &body() const { return body_; }
+
 private:
   Method method_;
   string path_;
   string query_;
+  string body_;
   Version version_;
   std::map<string, string> headers_;
 };

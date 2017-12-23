@@ -7,6 +7,7 @@
 #include <stdlib.h>     // exit
 #include <strings.h>    // bzero
 #include <sys/socket.h> // socket
+#include <sys/stat.h>
 #include <sys/types.h> // some historical (BSD) implementations required this header file
 #include <unistd.h> // close
 
@@ -100,6 +101,125 @@ int write_n(int sockfd, const void *buf, int length)
   return written;
 }
 
+void unimplemented(HttpResponse *response)
+{
+  response->set_status_code(HttpResponse::k501NotImplemented);
+  response->set_status_message("Method Not Implemented");
+  response->set_content_type("text/html");
+  response->set_body("<HTML><HEAD><TITLE>Method Not Implemented"
+                     "</TITLE></HEAD>"
+                     "<BODY><P>HTTP request method not supported."
+                     "</BODY></HTML>");
+}
+
+void not_found(HttpResponse *response)
+{
+  response->set_status_code(HttpResponse::k404NotFound);
+  response->set_status_message("NOT FOUND");
+  response->set_content_type("text/html");
+  response->set_body("<HTML><TITLE>Not Found</TITLE>"
+                     "<BODY><P>The server could not fulfill"
+                     "your request because the resource specified"
+                     "is unavailable or nonexistent."
+                     "</BODY></HTML>");
+}
+
+void serve_file(const string &file, FILE *fp, HttpResponse *response)
+{
+  response->set_status_code(HttpResponse::k200Ok);
+  response->set_status_message("OK");
+  response->set_content_type("text/html");
+
+  char buf[8192];
+
+  size_t nr = 0;
+  while ((nr = fread(buf, 1, sizeof(buf), fp)) > 0)
+  {
+    // FIXME: 暂时就拷到缓冲区把
+    response->append_body(string(buf, nr));
+  }
+}
+
+HttpResponse deal_with_request(const HttpRequest &request)
+{
+  const string &connection = request.get_header("Connection");
+  bool close =
+      connection == "close" ||
+      (request.version() == HttpRequest::kHttp10 && connection != "Keep-Alive");
+
+  HttpResponse response(close);
+
+  if (!(request.method() == HttpRequest::kGet ||
+        request.method() == HttpRequest::kPost))
+  {
+    unimplemented(&response);
+    return response;
+  }
+
+  if (request.method() == HttpRequest::kPost)
+  {
+    // cgi
+    unimplemented(&response);
+    return response;
+  }
+
+  if (request.method() == HttpRequest::kGet)
+  {
+    if (request.query() != "")
+    {
+      // cgi
+      unimplemented(&response);
+      return response;
+    }
+    else
+    {
+      // get static file
+      string request_path = string("web") + request.path();
+      if (request_path[request_path.size() - 1] == '/')
+      {
+        request_path += "index.html";
+      }
+
+      struct stat st;
+      if (stat(request_path.c_str(), &st) == -1)
+      {
+        LOG_WARN << "file:" << request_path << " stat " << strerror(errno);
+        not_found(&response);
+        return response;
+      }
+
+      if ((st.st_mode & S_IFMT) == S_IFDIR)
+      {
+        request_path += "/index.html";
+      }
+
+      FILE *fp = fopen(request_path.c_str(), "rb");
+
+      if (!fp)
+      {
+        LOG_WARN << "file: " << request_path << " can not fopen";
+        not_found(&response);
+        return response;
+      }
+
+      serve_file(request_path, fp, &response);
+      fclose(fp);
+      return response;
+    }
+  }
+
+  // response.set_status_code(HttpResponse::k404NotFound);
+  // response.set_status_message("Not Found");
+  // response.set_close_connection(true);
+
+  // response.set_status_code(HttpResponse::k200Ok);
+  // response.set_status_message("OK");
+  // response.set_content_type("text/plain");
+  // response.set_body("hello world");
+
+  return response;
+}
+
 bool do_with_buffer(muduo::net::Buffer *buf, HttpContext *context,
                     SocketPtr client_socket)
 {
@@ -118,21 +238,7 @@ bool do_with_buffer(muduo::net::Buffer *buf, HttpContext *context,
   {
     const auto &request = context->request();
 
-    const string &connection = request.get_header("Connection");
-    bool close =
-        connection == "close" || (request.version() == HttpRequest::kHttp10 &&
-                                  connection != "Keep-Alive");
-
-    HttpResponse response(close);
-    // response.set_status_code(HttpResponse::k404NotFound);
-    // response.set_status_message("Not Found");
-    // response.set_close_connection(true);
-
-    response.set_status_code(HttpResponse::k200Ok);
-    response.set_status_message("OK");
-    response.set_content_type("text/plain");
-    response.set_body("hello world");
-
+    auto response = deal_with_request(request);
     Buffer outbuf;
     response.append_to_buffer(&outbuf);
 

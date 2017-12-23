@@ -141,3 +141,113 @@ BOOST_AUTO_TEST_CASE(test_http_context_empyt_header_value)
   BOOST_CHECK_EQUAL(request.get_header("User-Agent"), string(""));
   BOOST_CHECK_EQUAL(request.get_header("Accept-Encoding"), string(""));
 }
+
+BOOST_AUTO_TEST_CASE(test_http_context_body_simple)
+{
+  // 普通测试请求body
+  HttpContext context;
+  Buffer input;
+  input.append("POST /color.cgi HTTP/1.1\r\n"
+               "Host: vm1\r\n"
+               "Connection: keep-alive\r\n"
+               "Content-Length: 10\r\n"
+               "Cache-Control: max-age=0\r\n"
+               "Origin: http://vm1\r\n"
+               "Upgrade-Insecure-Requests: 1\r\n"
+               "Content-Type: application/x-www-form-urlencoded\r\n"
+               "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+               "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 "
+               "Safari/537.36\r\n"
+               "Accept: "
+               "text/html,application/xhtml+xml,application/xml;q=0.9,image/"
+               "webp,image/apng,*/*;q=0.8\r\n"
+               "Referer: http://vm1/\r\n"
+               "Accept-Encoding: gzip, deflate\r\n"
+               "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n"
+               "\r\n"
+               "color=blue");
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK(context.got_all());
+  const auto &request = context.request();
+  BOOST_CHECK(context.got_all());
+  BOOST_CHECK_EQUAL(request.body().size(), 10);
+  BOOST_CHECK_EQUAL(request.get_remain_body_len(), 0);
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
+}
+
+BOOST_AUTO_TEST_CASE(test_http_context_body_one_by_one)
+{
+  // body 一个一个字节解析
+  HttpContext context;
+  Buffer input;
+  input.append("POST /color.cgi HTTP/1.1\r\n"
+               "Connection: keep-alive\r\n"
+               "Content-Length: 10\r\n"
+               "\r\n");
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK(!context.got_all());
+
+  string tmp = "color=blue";
+
+  for (auto &v : tmp)
+  {
+    input.append(string(1, v));
+    BOOST_CHECK(context.parse_request(&input));
+  }
+
+  BOOST_CHECK(context.got_all());
+  const auto &request = context.request();
+  BOOST_CHECK_EQUAL(request.body().size(), 10);
+  BOOST_CHECK_EQUAL(request.get_remain_body_len(), 0);
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
+}
+
+BOOST_AUTO_TEST_CASE(test_http_context_body_more)
+{
+  // body没到齐,和下一个请求粘在一起了,不过应该不太可能!
+  HttpContext context;
+  Buffer input;
+  input.append("POST /color.cgi HTTP/1.1\r\n"
+               "Connection: keep-alive\r\n"
+               "Content-Length: 10\r\n"
+               "\r\n"
+               "color=");
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK(!context.got_all());
+
+  BOOST_CHECK_EQUAL(input.readableBytes(), 0);
+
+  string next_str = string("blue"
+                           "POST /color.cgi HTTP/1.1\r\n"
+                           "Connection: keep-alive\r\n"
+                           "Content-Length: 10\r\n"
+                           "\r\n"
+                           "color=blue\r\n");
+  input.append(next_str);
+
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK(context.got_all());
+
+  // parsed 4 bytes
+  BOOST_CHECK_EQUAL(input.readableBytes(), next_str.size() - 4);
+
+  // 还是kGotAll,除非你reset了,才能解析下一个context
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK_EQUAL(input.readableBytes(), next_str.size() - 4);
+  const auto &request = context.request();
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
+
+  // 解析剩余的下一个串
+  context.reset();
+  BOOST_CHECK(context.parse_request(&input));
+  BOOST_CHECK(context.got_all());
+  const auto &request2 = context.request();
+  BOOST_CHECK_EQUAL(input.readableBytes(), 2);
+  BOOST_CHECK_EQUAL(request2.body().size(), 10);
+  BOOST_CHECK_EQUAL(request2.get_remain_body_len(), 0);
+  BOOST_CHECK_EQUAL(request2.body(), string("color=blue"));
+
+  // 剩余的\r\n
+  context.reset();
+  BOOST_CHECK(!context.parse_request(&input));
+}

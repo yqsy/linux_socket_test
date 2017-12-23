@@ -18,6 +18,7 @@ public:
     k301MovedPermanently = 301,
     k400BadRequest = 400,
     k404NotFound = 404,
+    k501NotImplemented = 501
   };
 
   HttpResponse(bool close) : status_code_(kUnKnown), close_connection_(close) {}
@@ -39,6 +40,8 @@ public:
   void set_close_connection(bool on) { close_connection_ = on; }
 
   void set_body(const string &body) { body_ = body; }
+
+  void append_body(const string &body) { body_.append(body); }
 
   bool close_connection() const { return close_connection_; }
 

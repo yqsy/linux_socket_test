@@ -4,9 +4,10 @@
     - [1.1. 知乎](#11-知乎)
     - [1.2. 可以参考开源项目](#12-可以参考开源项目)
 - [2. 流程](#2-流程)
-- [3. 简单的请求报文](#3-简单的请求报文)
+- [3. 简单的报文](#3-简单的报文)
 - [4. 我认为的难点](#4-我认为的难点)
 - [5. benchmark](#5-benchmark)
+- [6. 调试语句](#6-调试语句)
 
 <!-- /TOC -->
 
@@ -56,8 +57,8 @@
 9. Shrink wrap your code and open-source it :)
 
 
-<a id="markdown-3-简单的请求报文" name="3-简单的请求报文"></a>
-# 3. 简单的请求报文
+<a id="markdown-3-简单的报文" name="3-简单的报文"></a>
+# 3. 简单的报文
 
 ```
 GET /123/123 HTTP/1.1\r\n
@@ -71,6 +72,44 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
 \r\n
 ```
 
+应答 keep-Alive
+```
+HTTP/1.1 200 OK\r\n
+Content-Length: 11\r\n
+Connection: Keep-Alive\r\n
+Content-Type: text/plain\r\n
+\r\n
+hello world
+```
+
+应答 close
+```
+HTTP/1.1 200 OK\r\n
+Connection: close\r\n
+Content-Type: text/plain\r\n
+\r\n
+hello world
+```
+
+
+post语句
+```
+POST /color.cgi HTTP/1.1\r\n
+Host: vm1\r\n
+Connection: keep-alive\r\n
+Content-Length: 10\r\n
+Cache-Control: max-age=0\r\n
+Origin: http://vm1\r\n
+Upgrade-Insecure-Requests: 1\r\n
+Content-Type: application/x-www-form-urlencoded\r\n
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36\r\n
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\r\n
+Referer: http://vm1/\r\n
+Accept-Encoding: gzip, deflate\r\n
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
+\r\n
+color=blue
+```
 
 <a id="markdown-4-我认为的难点" name="4-我认为的难点"></a>
 # 4. 我认为的难点
@@ -78,6 +117,7 @@ Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
 * 阻塞I/O read时 <0,==0怎么处理
 * 阻塞I/O 一次read多少字节的数据,怎么做CRLF的判断
 * http context的解析,用状态机
+* cgi使用什么方式调用?
 
 <a id="markdown-5-benchmark" name="5-benchmark"></a>
 # 5. benchmark
@@ -96,4 +136,19 @@ ab -n 2000 -c 25 http://127.0.0.1/
 
 # muduo-http example
 # Requests per second:    25514.43 [#/sec] (mean)
+
+# http_blocking
+# Requests per second:    4855.68 [#/sec] (mean)
+```
+
+<a id="markdown-6-调试语句" name="6-调试语句"></a>
+# 6. 调试语句
+
+```
+cmake -DCMAKE_BUILD_TYPE=Debug . && make
+cgdb http_blocking -ex 'set args 80' --ex 'b deal_with_request' -ex 'r'
+nc -l -4 0.0.0.0 80 > req.tmp
+
+# b HttpContext::parse_request
+cgdb http_unittest --ex 'b http_unittest.cpp:170'  --ex 'r'
 ```
