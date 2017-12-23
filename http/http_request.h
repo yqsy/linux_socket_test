@@ -66,6 +66,32 @@ public:
 
   Method method() const { return method_; }
 
+  string method_str() const
+  {
+    if (method_ == kGet)
+    {
+      return "GET";
+    }
+    else if (method_ == kPost)
+    {
+      return "POST";
+    }
+    else if (method_ == kHead)
+    {
+      return "HEAD";
+    }
+    else if (method_ == kPut)
+    {
+      return "PUT";
+    }
+    else if (method_ == kDelete)
+    {
+      return "DELETE";
+    }
+
+    return "INVALID";
+  }
+
   void set_version(Version v) { version_ = v; }
 
   Version version() const { return version_; }

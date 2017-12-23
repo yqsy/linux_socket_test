@@ -18,7 +18,8 @@ public:
     k301MovedPermanently = 301,
     k400BadRequest = 400,
     k404NotFound = 404,
-    k501NotImplemented = 501
+    k501NotImplemented = 501,
+    k500Error = 500
   };
 
   HttpResponse(bool close) : status_code_(kUnKnown), close_connection_(close) {}

@@ -9,6 +9,8 @@
 #include <sys/socket.h> // socket
 #include <sys/stat.h>
 #include <sys/types.h> // some historical (BSD) implementations required this header file
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h> // close
 
 #include <algorithm>
@@ -124,6 +126,14 @@ void not_found(HttpResponse *response)
                      "</BODY></HTML>");
 }
 
+void cannot_execute(HttpResponse *response)
+{
+  response->set_status_code(HttpResponse::k500Error);
+  response->set_status_message("NOT FOUND");
+  response->set_content_type("text/html");
+  response->set_body("<P>Error prohibited CGI execution.");
+}
+
 void serve_file(const string &file, FILE *fp, HttpResponse *response)
 {
   response->set_status_code(HttpResponse::k200Ok);
@@ -137,6 +147,83 @@ void serve_file(const string &file, FILE *fp, HttpResponse *response)
   {
     // FIXME: 暂时就拷到缓冲区把
     response->append_body(string(buf, nr));
+  }
+}
+
+void server_cgi(const HttpRequest &request, HttpResponse *response)
+{
+  response->set_status_code(HttpResponse::k200Ok);
+  response->set_status_message("OK");
+  // FIXME: CGI set  content_type
+  response->set_content_type("text/html");
+
+  int cgi_output[2]; // cgi -> parent
+  int cgi_input[2];  // parent -> cgi
+
+  if (pipe(cgi_output) < 0 || pipe(cgi_input) < 0)
+  {
+    cannot_execute(response);
+    return;
+  }
+  int pid;
+
+  if ((pid = fork()) < 0)
+  {
+    cannot_execute(response);
+    return;
+  }
+
+  if (pid == 0)
+  {
+    // child
+    dup2(cgi_output[1], STDOUT_FILENO);
+    dup2(cgi_input[0], STDIN_FILENO);
+    close(cgi_output[0]);
+    close(cgi_input[1]);
+
+    char meth_env[255];
+    snprintf(meth_env, sizeof(meth_env), "REQUEST_METHOD=%s",
+             request.method_str().c_str());
+    putenv(meth_env);
+
+    if (request.method() == HttpRequest::kGet)
+    {
+      // TODO
+      // char query_env[255];
+      // snprinf(query_env, sizeof(query_env), "QUERY_STRING=%s", );
+    }
+    else if (request.method() == HttpRequest::kPost)
+    {
+      char length_env[255];
+      snprintf(length_env, sizeof(length_env), "CONTENT_LENGTH=%zu",
+               request.body().size());
+      putenv(length_env);
+    }
+
+    string request_path = string("web") + request.path();
+    execl(request_path.c_str(), request_path.c_str(), NULL);
+    exit(0);
+  }
+  else
+  {
+    // parent
+    close(cgi_output[1]);
+    close(cgi_input[0]);
+    if (request.method() == HttpRequest::kPost)
+    {
+      write(cgi_input[1], request.body().c_str(), request.body().size());
+    }
+
+    char buf[8192];
+    int nr;
+    while ((nr = read(cgi_output[0], buf, sizeof(buf))) > 0)
+    {
+      response->append_body(string(buf, nr));
+    }
+    close(cgi_output[0]);
+    close(cgi_input[1]);
+    int status;
+    waitpid(pid, &status, 0);
   }
 }
 
@@ -159,7 +246,7 @@ HttpResponse deal_with_request(const HttpRequest &request)
   if (request.method() == HttpRequest::kPost)
   {
     // cgi
-    unimplemented(&response);
+    server_cgi(request, &response);
     return response;
   }
 
@@ -174,6 +261,7 @@ HttpResponse deal_with_request(const HttpRequest &request)
     else
     {
       // get static file
+      // FIXME: 全局同一的web目录
       string request_path = string("web") + request.path();
       if (request_path[request_path.size() - 1] == '/')
       {
@@ -207,16 +295,6 @@ HttpResponse deal_with_request(const HttpRequest &request)
       return response;
     }
   }
-
-  // response.set_status_code(HttpResponse::k404NotFound);
-  // response.set_status_message("Not Found");
-  // response.set_close_connection(true);
-
-  // response.set_status_code(HttpResponse::k200Ok);
-  // response.set_status_message("OK");
-  // response.set_content_type("text/plain");
-  // response.set_body("hello world");
-
   return response;
 }
 

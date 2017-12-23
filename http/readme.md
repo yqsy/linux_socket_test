@@ -30,6 +30,8 @@
 * https://github.com/shihyu/Linux_Programming/blob/master/books/Advanced.Programming.in.the.UNIX.Environment.3rd.Edition.0321637739.pdf (apue 卷3)
 * https://github.com/shihyu/Linux_Programming/blob/master/books/UNIX%20Network%20Programming(Volume1%2C3rd).pdf (apue 卷1)
 * http://blog.51reboot.com/cgi-fastcgi-wsgi/ (cgi fastcgi wsgi)
+* https://www.jmarshall.com/easy/cgi/ (cgi)
+* https://stackoverflow.com/questions/3135307/send-post-request-with-netcat (使用netcat发送post)
 
 <a id="markdown-11-知乎" name="11-知乎"></a>
 ## 1.1. 知乎
@@ -95,20 +97,35 @@ hello world
 post语句
 ```
 POST /color.cgi HTTP/1.1\r\n
-Host: vm1\r\n
 Connection: keep-alive\r\n
 Content-Length: 10\r\n
-Cache-Control: max-age=0\r\n
-Origin: http://vm1\r\n
-Upgrade-Insecure-Requests: 1\r\n
-Content-Type: application/x-www-form-urlencoded\r\n
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36\r\n
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8\r\n
-Referer: http://vm1/\r\n
-Accept-Encoding: gzip, deflate\r\n
-Accept-Language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7\r\n
 \r\n
 color=blue
+```
+
+```
+head="POST /color.cgi HTTP/1.1\r\nConnection: keep-alive\r\nContent-Length: 10\r\n\r\ncolor=blue"; 
+
+echo -ne $head | nc localhost 80
+```
+
+得到cgi的应答
+```
+HTTP/1.1 200 OK
+Content-Length: 368
+Connection: Keep-Alive
+
+<!DOCTYPE html
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+<title>BLUE</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+</head>
+<body bgcolor="blue">
+<h1>This is blue</h1>
+</body>
 ```
 
 <a id="markdown-4-我认为的难点" name="4-我认为的难点"></a>
@@ -144,11 +161,24 @@ ab -n 2000 -c 25 http://127.0.0.1/
 <a id="markdown-6-调试语句" name="6-调试语句"></a>
 # 6. 调试语句
 
-```
+```bash
 cmake -DCMAKE_BUILD_TYPE=Debug . && make
+
+# got_all之后
 cgdb http_blocking -ex 'set args 80' --ex 'b deal_with_request' -ex 'r'
 nc -l -4 0.0.0.0 80 > req.tmp
 
 # b HttpContext::parse_request
 cgdb http_unittest --ex 'b http_unittest.cpp:170'  --ex 'r'
+
+# 调试主进程
+gdb --tui http_blocking --ex 'set args 80' --ex 'b server_cgi' --ex 'r'
+
+# 调试子进程
+gdb --tui http_blocking --ex 'set follow-fork-mode child' \
+-ex 'set args 80' --ex 'b server_cgi' --ex 'r'
+
+# do_with_buffer
+cgdb http_blocking -ex 'set args 80' --ex 'b do_with_buffer' -ex 'r'
+
 ```
