@@ -148,6 +148,7 @@ ab [options] [http[s]://]hostname[:port]/path
 
 ab -n 2000 -c 25 http://127.0.0.1/
 
+
 # tinyhttpd
 # Requests per second:    4228.45 [#/sec] (mean)
 
@@ -156,6 +157,10 @@ ab -n 2000 -c 25 http://127.0.0.1/
 
 # http_blocking
 # Requests per second:    4855.68 [#/sec] (mean)
+
+ab -n 2000 -c 25 http://127.0.0.1/color.cgi?color=fuck
+# http_blocking with cgi (perl)
+# Requests per second:    219.72 [#/sec] (mean)
 ```
 
 <a id="markdown-6-调试语句" name="6-调试语句"></a>
