@@ -186,11 +186,17 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
     putenv(meth_env);
 
     char length_env[255];
+    char query_env[255];
     if (request.method() == HttpRequest::kGet)
     {
-      // TODO
-      // char query_env[255];
-      // snprinf(query_env, sizeof(query_env), "QUERY_STRING=%s", );
+      assert(request.query().size() > 0);
+
+      // remove ? begin
+      string req = request.query();
+      req = req.erase(0, 1);
+
+      snprintf(query_env, sizeof(query_env), "QUERY_STRING=%s", req.c_str());
+      putenv(query_env);
     }
     else if (request.method() == HttpRequest::kPost)
     {
@@ -256,7 +262,7 @@ HttpResponse deal_with_request(const HttpRequest &request)
     if (request.query() != "")
     {
       // cgi
-      unimplemented(&response);
+      server_cgi(request, &response);
       return response;
     }
     else
