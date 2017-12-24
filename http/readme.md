@@ -165,11 +165,11 @@ ab -n 2000 -c 25 http://127.0.0.1/
 cmake -DCMAKE_BUILD_TYPE=Debug . && make
 
 # got_all之后
-cgdb http_blocking -ex 'set args 80' --ex 'b deal_with_request' -ex 'r'
+gdb --tui  http_blocking -ex 'set args 80' --ex 'b deal_with_request' -ex 'r'
 nc -l -4 0.0.0.0 80 > req.tmp
 
 # b HttpContext::parse_request
-cgdb http_unittest --ex 'b http_unittest.cpp:170'  --ex 'r'
+gdb --tui  http_unittest --ex 'b http_unittest.cpp:170'  --ex 'r'
 
 # 调试主进程
 gdb --tui http_blocking --ex 'set args 80' --ex 'b server_cgi' --ex 'r'
@@ -179,6 +179,11 @@ gdb --tui http_blocking --ex 'set follow-fork-mode child' \
 -ex 'set args 80' --ex 'b server_cgi' --ex 'r'
 
 # do_with_buffer
-cgdb http_blocking -ex 'set args 80' --ex 'b do_with_buffer' -ex 'r'
+gdb --tui  http_blocking -ex 'set args 80' --ex 'b do_with_buffer' -ex 'r'
 
+# 调试tinyhttpd的fork cgi
+gdb --tui httpd --ex 'set follow-fork-mode child' --ex 'b execute_cgi' -ex 'r'
+
+# 调试tinyhttpd的主体
+gdb --tui httpd --ex 'b execute_cgi' -ex 'r'
 ```

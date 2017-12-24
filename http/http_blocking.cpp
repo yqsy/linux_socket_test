@@ -9,7 +9,6 @@
 #include <sys/socket.h> // socket
 #include <sys/stat.h>
 #include <sys/types.h> // some historical (BSD) implementations required this header file
-#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h> // close
 
@@ -186,6 +185,7 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
              request.method_str().c_str());
     putenv(meth_env);
 
+    char length_env[255];
     if (request.method() == HttpRequest::kGet)
     {
       // TODO
@@ -194,13 +194,14 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
     }
     else if (request.method() == HttpRequest::kPost)
     {
-      char length_env[255];
       snprintf(length_env, sizeof(length_env), "CONTENT_LENGTH=%zu",
                request.body().size());
+
+      // 注意:putenv 放的是指针啊,放在栈上内存释放了就坑了
       putenv(length_env);
     }
 
-    string request_path = string("web") + request.path();
+    string request_path = string("htdocs") + request.path();
     execl(request_path.c_str(), request_path.c_str(), NULL);
     exit(0);
   }
@@ -261,8 +262,8 @@ HttpResponse deal_with_request(const HttpRequest &request)
     else
     {
       // get static file
-      // FIXME: 全局同一的web目录
-      string request_path = string("web") + request.path();
+      // FIXME: 全局同一的htdocs目录
+      string request_path = string("htdocs") + request.path();
       if (request_path[request_path.size() - 1] == '/')
       {
         request_path += "index.html";
