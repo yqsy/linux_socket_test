@@ -6,3 +6,6 @@ target_link_libraries(http_unittest httplight muduo_base_cpp11 muduo_net_cpp11 p
 
 add_executable(http_blocking http_blocking_cgi.cpp)
 target_link_libraries(http_blocking httplight muduo_base_cpp11 muduo_net_cpp11 pthread)
+
+add_executable(http_nonblock_simple http_nonblock_simple.cpp)
+target_link_libraries(http_nonblock_simple httplight muduo_base_cpp11 muduo_net_cpp11 pthread)
