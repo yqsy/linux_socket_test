@@ -6,6 +6,63 @@
 
 <body>
 
-</body>
+    <h1>{{procname}} on {{hostname}} </h1>
+    <p>Refresh
+        <a href="?refresh=1">1s</a>
+        <a href="?refresh=2">2s</a>
+        <a href="?refresh=5">5s</a>
+        <a href="?refresh=15">15s</a>
+        <a href="?refresh=60">60s</a>
+    </p>
+    <p>
+        <a href="/cmdline">Command line</a>
+        <a href="/environ">Environment variables</a>
+        <a href="/threads">Threads</a>
+    </p>
+    <p>Page generated at {{nowtime}} (UTC)</p>
+    <p>
+        <table>
+            <tr>
+                <td>PID</td>
+                <td>{{pid}}</td>
+            </tr>
+            <tr>
+                <td>Started at</td>
+                <td>{{start_time}} (UTC)</td>
+            </tr>
+            <tr>
+                <td>Uptime (s)</td>
+                <td>{{uptimes}}</td>
+            </tr>
+            <tr>
+                <td>Executable</td>
+                <td>{{ececuable}}</td>
+            </tr>
+            <tr>
+                <td>Current dir</td>
+                <td>{{current_dir}}</td>
+            </tr>
+            <tr>
+                <td>State</td>
+                <td>{{state}}</td>
+            </tr>
+            <tr>
+                <td>User time (s)</td>
+                <td>{{user_time}}</td>
+            </tr>
+            <tr>
+                <td>System time (s)</td>
+                <td>{{system_time}}</td>
+            </tr>
+            <tr>
+                <td>VmSize (KiB)</td>
+                <td>{{vm_size}}</td>
+            </tr>
+            <tr>
+                <td>VmRSS (KiB)</td>
+                <td>{{vm_rss}}</td>
+            </tr>
+        </table>
+    </p>
 
 </html>
