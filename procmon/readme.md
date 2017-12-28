@@ -3,6 +3,7 @@
 - [1. 简要](#1-简要)
 - [2. 用c++代码来拼接html?](#2-用c代码来拼接html)
 - [3. 库](#3-库)
+- [4. 调试](#4-调试)
 
 <!-- /TOC -->
 
@@ -67,4 +68,11 @@ make install
 
 echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc
 
+```
+
+<a id="markdown-4-调试" name="4-调试"></a>
+# 4. 调试
+
+```
+cgdb procmon -ex 'set args 1 80' -ex 'b Procmon::fill_over_fiew' -ex 'r'
 ```

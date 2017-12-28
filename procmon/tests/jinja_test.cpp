@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
   // const string result = mytemplate.render();
   // std::cout << "[" << result << "]" << endl;
 
-  FILE *fp = fopen("procmon/procmon.html", "rb");
+  FILE *fp = fopen("procmondocs/procmon.html", "rb");
   if (fp)
   {
     const int kBufSize = 64 * 1024;
@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
     mytemplate.setValue("procname", "proc1");
     mytemplate.setValue("hostname", "host1");
     std::cout << mytemplate.render();
+
+    fclose(fp);
   }
   else
   {
