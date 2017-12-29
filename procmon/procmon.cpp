@@ -99,9 +99,9 @@ public:
 
     if (stat.empty())
     {
-      std::ifstream t("procmondocs/nostat.html");
+      std::ifstream ifs("procmondocs/nostat.html");
 
-      string str((std::istreambuf_iterator<char>(t)),
+      string str((std::istreambuf_iterator<char>(ifs)),
                  std::istreambuf_iterator<char>());
 
       Template t(str.c_str());
@@ -112,23 +112,23 @@ public:
       return;
     }
 
-    Timestamp now = Timestamp::now()
+    Timestamp now = Timestamp::now();
 
-        pid_t pid = atoi(stat.c_str());
+    pid_t pid = atoi(stat.c_str());
     assert(pid == pid_);
 
-    std::ifstream t("procmondocs/procmon.html");
-    string str((std::istreambuf_iterator<char>(t)),
+    std::ifstream ifs("procmondocs/procmon.html");
+    string str((std::istreambuf_iterator<char>(ifs)),
                std::istreambuf_iterator<char>());
     Template t(str.c_str());
     t.setValue("procname", procname_.c_str());
     t.setValue("hostname", hostname_.c_str());
     t.setValue("nowtime", now.toFormattedString().c_str());
-    t.SetValue("pid", boost::lexical_cast<string>(pid_).c_str());
+    t.setValue("pid", boost::lexical_cast<string>(pid_).c_str());
 
-    Timestamp started(getStartTime(statData.starttime));
+    // Timestamp started(getStartTime(statData.starttime));
 
-    t.SetValue("start_time", );
+    // t.setValue("start_time", );
   }
 
   string read_proc_file(const char *basename)
