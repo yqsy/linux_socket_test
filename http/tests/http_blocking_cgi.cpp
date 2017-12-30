@@ -43,9 +43,9 @@ public:
 
 typedef std::shared_ptr<Socket> SocketPtr;
 
-string raw_str(const string &ori)
+std::string raw_str(const std::string &ori)
 {
-  string result;
+  std::string result;
   for (auto &c : ori)
   {
     if (c == '\r')
@@ -133,7 +133,7 @@ void cannot_execute(HttpResponse *response)
   response->set_body("<P>Error prohibited CGI execution.");
 }
 
-void serve_file(const string &file, FILE *fp, HttpResponse *response)
+void serve_file(const std::string &file, FILE *fp, HttpResponse *response)
 {
   response->set_status_code(HttpResponse::k200Ok);
   response->set_status_message("OK");
@@ -145,7 +145,7 @@ void serve_file(const string &file, FILE *fp, HttpResponse *response)
   while ((nr = fread(buf, 1, sizeof(buf), fp)) > 0)
   {
     // FIXME: 暂时就拷到缓冲区把
-    response->append_body(string(buf, nr));
+    response->append_body(std::string(buf, nr));
   }
 }
 
@@ -192,10 +192,10 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
       assert(request.query().size() > 0);
 
       // remove ? begin
-      string req = request.query();
+      std::string req = request.query();
       req = req.erase(0, 1);
 
-      snprintf(query_env, sizeof(query_env), "QUERY_STRING=%s", req.c_str());
+      snprintf(query_env, sizeof(query_env), "QUERY_string=%s", req.c_str());
       putenv(query_env);
     }
     else if (request.method() == HttpRequest::kPost)
@@ -207,7 +207,7 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
       putenv(length_env);
     }
 
-    string request_path = string("htdocs") + request.path();
+    std::string request_path = std::string("htdocs") + request.path();
     execl(request_path.c_str(), request_path.c_str(), NULL);
     exit(0);
   }
@@ -225,7 +225,7 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
     int nr;
     while ((nr = read(cgi_output[0], buf, sizeof(buf))) > 0)
     {
-      response->append_body(string(buf, nr));
+      response->append_body(std::string(buf, nr));
     }
     close(cgi_output[0]);
     close(cgi_input[1]);
@@ -236,7 +236,7 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
 
 HttpResponse deal_with_request(const HttpRequest &request)
 {
-  const string &connection = request.get_header("Connection");
+  const std::string &connection = request.get_header("Connection");
   bool close =
       connection == "close" ||
       (request.version() == HttpRequest::kHttp10 && connection != "Keep-Alive");
@@ -269,7 +269,7 @@ HttpResponse deal_with_request(const HttpRequest &request)
     {
       // get static file
       // FIXME: 全局同一的htdocs目录
-      string request_path = string("htdocs") + request.path();
+      std::string request_path = std::string("htdocs") + request.path();
       if (request_path[request_path.size() - 1] == '/')
       {
         request_path += "index.html";
@@ -311,9 +311,9 @@ bool do_with_buffer(muduo::net::Buffer *buf, HttpContext *context,
   if (!context->parse_request(buf))
   {
     LOG_WARN << "parse error shutdown buf[:10] = "
-             << raw_str(string(buf->peek(),
-                               std::min(size_t(10), buf->readableBytes())));
-    string err("HTTP/1.1 400 Bad Request\r\n\r\n");
+             << raw_str(std::string(
+                    buf->peek(), std::min(size_t(10), buf->readableBytes())));
+    std::string err("HTTP/1.1 400 Bad Request\r\n\r\n");
     write_n(client_socket->sockfd_, err.c_str(), err.size());
     shutdown_close_fd(client_socket->sockfd_);
     return false;
