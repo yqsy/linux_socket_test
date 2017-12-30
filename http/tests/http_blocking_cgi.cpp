@@ -195,7 +195,7 @@ void server_cgi(const HttpRequest &request, HttpResponse *response)
       std::string req = request.query();
       req = req.erase(0, 1);
 
-      snprintf(query_env, sizeof(query_env), "QUERY_string=%s", req.c_str());
+      snprintf(query_env, sizeof(query_env), "QUERY_STRING=%s", req.c_str());
       putenv(query_env);
     }
     else if (request.method() == HttpRequest::kPost)
