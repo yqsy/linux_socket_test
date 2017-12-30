@@ -1,10 +1,13 @@
-#include <fstream>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <fstream>
 #include <streambuf>
+#include <vector>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/bind.hpp>
+#include <boost/circular_buffer.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
@@ -72,6 +75,17 @@ struct StatData
   long rsslim;
 };
 
+struct CpuTime
+{
+  int user_time_;
+  int sys_time_;
+
+  double cpu_usage(double kperiod, double kclock_ticks_per_seconds) const
+  {
+    return (user_time_ + sys_time_) / (kperiod * kclock_ticks_per_seconds);
+  }
+};
+
 class Procmon : boost::noncopyable
 {
 public:
@@ -81,8 +95,10 @@ public:
         kboot_time_(get_boot_time()), // epoch time
         beijing_(8 * 3600, "CST"), pid_(pid),
         procname_(ProcessInfo::procname(read_proc_file("stat")).as_string()),
-        hostname_(ProcessInfo::hostname()), cmd_line_(get_cmd_line())
+        hostname_(ProcessInfo::hostname()), cmd_line_(get_cmd_line()),
+        ticks_(0), cpu_usage_(600 / kperiod_) // 10 minutes
   {
+    bzero(&last_stat_data_, sizeof(last_stat_data_));
   }
 
   void on_message(const TcpConnectionPtr &conn, Buffer *buf,
@@ -173,6 +189,19 @@ public:
     else if (req.path() == "/status")
     {
       resp->set_body(read_proc_file("status"));
+    }
+    else if (req.path() == "/cpu.png")
+    {
+      std::vector<double> cpu_usage;
+      for (size_t i = 0; i < cpu_usage_.size(); ++i)
+      {
+        cpu_usage.push_back(
+            cpu_usage_[i].cpu_usage(kperiod_, kclock_ticks_per_second_));
+      }
+
+      // generate png
+      // resp.set_body();
+      resp.set_content_type("image/png");
     }
     else
     {
@@ -320,13 +349,13 @@ public:
     return result;
   }
 
-  string get_cmd_line()
+  string get_cmd_line() const
   {
     return boost::replace_all_copy(read_proc_file("cmdline"), string(1, '\0'),
                                    "\n\t");
   }
 
-  string get_environ()
+  string get_environ() const
   {
     return boost::replace_all_copy(read_proc_file("environ"), string(1, '\0'),
                                    "\n");
@@ -366,17 +395,51 @@ public:
     return get_long(stat, "btime ");
   }
 
+  void tick()
+  {
+    string stat = read_proc_file("stat");
+    if (stat.empty())
+    {
+      return;
+    }
+
+    StringPiece procname = ProcessInfo::procname(stat);
+    StatData stat_data;
+    bzero(&stat_data, sizeof(stat_data));
+    assert(*procname.end() == ')');
+    stat_data.parse(procname.end() + 1, kb_per_page_);
+
+    if (ticks_ > 0)
+    {
+      CpuTime time;
+      time.user_time_ = std::max(
+          0, static_cast<int>(stat_data.utime - last_stat_data_.utime));
+      time.sys_time_ = std::max(
+          0, static_cast<int>(stat_data.stime - last_stat_data_.stime));
+      cpu_usage_.push_back(time);
+    }
+
+    last_stat_data_ = stat_data;
+    ++ticks_;
+  }
+
+  int period() const { return kperiod_; }
+
 private:
-  const int kclock_ticks_per_second_;
-  const int kb_per_page_;
-  const long kboot_time_; // epoch time
-  const muduo::TimeZone beijing_;
+  const int kperiod_ = 2.0;           // cpu flush every two seconds
+  const int kclock_ticks_per_second_; // get procerss start time
+  const int kb_per_page_;             // parse /proc/pid/stat
+  const long kboot_time_;             // epoch time
+  const muduo::TimeZone beijing_;     // for time format
 
   const pid_t pid_;
-
   const string procname_;
   const string hostname_;
   const string cmd_line_;
+
+  StatData last_stat_data_;
+  int ticks_; // 记录两次间隔之内的cpu使用率
+  boost::circular_buffer<CpuTime> cpu_usage_; // 10分钟内cpu统计
 };
 
 int main(int argc, char *argv[])
@@ -406,6 +469,8 @@ int main(int argc, char *argv[])
   tcp_server.setMessageCallback(
       boost::bind(&Procmon::on_message, &procmon, _1, _2, _3));
 
+  tcp_server.getLoop()->runEvery(procmon.period(),
+                                 boost::bind(&Procmon::tick, &procmon));
   tcp_server.start();
   loop.loop();
 
