@@ -2,6 +2,10 @@
 
 <head>
     <title> {{procname}} on {{hostname}} </title>
+
+    {% if refresh %}
+    <meta http-equiv="refresh" content="{{refresh}}"> {% endif %}
+
 </head>
 
 <body>
@@ -15,11 +19,16 @@
         <a href="?refresh=60">60s</a>
     </p>
     <p>
-        <a href="/cmdline">Command line</a>
-        <a href="/environ">Environment variables</a>
-        <a href="/threads">Threads</a>
+        <a href="/cmdline">cmdline</a>
+        <a href="/environ">environ</a>
+        <a href="/threads">threads</a>
+        <a href="/io">io</a>
+        <a href="/limits">limits</a>
+        <a href="/maps">maps</a>
+        <a href="/smaps">smaps</a>
+        <a href="/status">status</a>
     </p>
-    <p>Page generated at {{nowtime}} (UTC)</p>
+    <p>Page generated at {{nowtime}} (CST)</p>
     <p>
         <table>
             <tr>
@@ -28,7 +37,7 @@
             </tr>
             <tr>
                 <td>Started at</td>
-                <td>{{start_time}} (UTC)</td>
+                <td>{{start_time}} (CST)</td>
             </tr>
             <tr>
                 <td>Uptime (s)</td>

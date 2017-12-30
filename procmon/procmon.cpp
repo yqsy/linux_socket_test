@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <streambuf>
 
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/bind.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
@@ -78,9 +79,9 @@ public:
       : kclock_ticks_per_second_(muduo::ProcessInfo::clockTicksPerSecond()),
         kb_per_page_(muduo::ProcessInfo::pageSize() / 1024),
         kboot_time_(get_boot_time()), // epoch time
-        pid_(pid),                    // pid
+        beijing_(8 * 3600, "CST"), pid_(pid),
         procname_(ProcessInfo::procname(read_proc_file("stat")).as_string()),
-        hostname_(ProcessInfo::hostname())
+        hostname_(ProcessInfo::hostname()), cmd_line_(get_cmd_line())
   {
   }
 
@@ -141,6 +142,44 @@ public:
       resp->set_content_type("text/html");
       fill_over_fiew(req.query(), resp);
     }
+    else if (req.path() == "/cmdline")
+    {
+      resp->set_body(cmd_line_);
+    }
+    else if (req.path() == "/environ")
+    {
+      resp->set_body(get_environ());
+    }
+    else if (req.path() == "/threads")
+    {
+      resp->set_body("");
+    }
+    else if (req.path() == "/io")
+    {
+      resp->set_body(read_proc_file("io"));
+    }
+    else if (req.path() == "/limits")
+    {
+      resp->set_body(read_proc_file("limits"));
+    }
+    else if (req.path() == "/maps")
+    {
+      resp->set_body(read_proc_file("maps"));
+    }
+    else if (req.path() == "/smaps")
+    {
+      resp->set_body(read_proc_file("smaps"));
+    }
+    else if (req.path() == "/status")
+    {
+      resp->set_body(read_proc_file("status"));
+    }
+    else
+    {
+      resp->set_status_code(HttpResponse::k404NotFound);
+      resp->set_status_message("Not Found");
+      resp->set_close_connection(true);
+    }
   }
 
   void fill_over_fiew(const string &query, HttpResponse *resp)
@@ -172,9 +211,21 @@ public:
     string str((std::istreambuf_iterator<char>(ifs)),
                std::istreambuf_iterator<char>());
     Template t(str);
+
+    // refresh
+    size_t pos = query.find("refresh=");
+    if (pos != string::npos)
+    {
+      int seconds = atoi(query.c_str() + pos + 8);
+      if (seconds > 0)
+      {
+        t.setValue("refresh", std::to_string(seconds));
+      }
+    }
+
     t.setValue("procname", procname_);
     t.setValue("hostname", hostname_);
-    t.setValue("nowtime", now.toFormattedString());
+    t.setValue("nowtime", format_cst(now));
     t.setValue("pid", std::to_string(pid_));
 
     StatData stat_data;
@@ -184,7 +235,7 @@ public:
 
     stat_data.parse(procname.end() + 1, kb_per_page_);
     Timestamp started(get_start_time(stat_data.starttime));
-    t.setValue("start_time", started.toFormattedString(false));
+    t.setValue("start_time", format_cst(started, false));
     t.setValue("uptimes", format_double(timeDifference(now, started)));
     t.setValue("ececuable", read_link("exe"));
     t.setValue("current_dir", read_link("cwd"));
@@ -201,12 +252,34 @@ public:
     resp->set_body(t.render());
   }
 
-  string format_double(double val)
+  string format_cst(const Timestamp &stamp, bool showMicroseconds = true) const
+  {
+    struct tm tm_time = beijing_.toLocalTime(stamp.secondsSinceEpoch());
+
+    char buf[32] = {0};
+    if (showMicroseconds)
+    {
+      int microseconds = static_cast<int>(stamp.microSecondsSinceEpoch() %
+                                          Timestamp::kMicroSecondsPerSecond);
+      snprintf(buf, sizeof(buf), "%4d%02d%02d %02d:%02d:%02d.%06d",
+               tm_time.tm_year + 1900, tm_time.tm_mon + 1, tm_time.tm_mday,
+               tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec, microseconds);
+    }
+    else
+    {
+      snprintf(buf, sizeof(buf), "%4d%02d%02d %02d:%02d:%02d",
+               tm_time.tm_year + 1900, tm_time.tm_mon + 1, tm_time.tm_mday,
+               tm_time.tm_hour, tm_time.tm_min, tm_time.tm_sec);
+    }
+    return buf;
+  }
+
+  static string format_double(double val)
   {
     return boost::str(boost::format("%.2f") % val);
   }
 
-  const char *get_state(char state)
+  static const char *get_state(char state)
   {
     switch (state)
     {
@@ -223,7 +296,7 @@ public:
     }
   }
 
-  string read_proc_file(const char *basename)
+  string read_proc_file(const char *basename) const
   {
     char filename[256];
     snprintf(filename, sizeof(filename), "/proc/%d/%s", pid_, basename);
@@ -232,7 +305,7 @@ public:
     return content;
   }
 
-  string read_link(const char *basename)
+  string read_link(const char *basename) const
   {
     char filename[256];
     snprintf(filename, sizeof(filename), "/proc/%d/%s", pid_, basename);
@@ -247,23 +320,35 @@ public:
     return result;
   }
 
+  string get_cmd_line()
+  {
+    return boost::replace_all_copy(read_proc_file("cmdline"), string(1, '\0'),
+                                   "\n\t");
+  }
+
+  string get_environ()
+  {
+    return boost::replace_all_copy(read_proc_file("environ"), string(1, '\0'),
+                                   "\n");
+  }
+
   // starttime = /porc/pid/stat starttime
   // 应该是进程启动到现在的tick数量
   // 需要转换成second
   // 返回启动时间的epoch time
-  Timestamp get_start_time(long starttime)
+  Timestamp get_start_time(long starttime) const
   {
     return Timestamp(Timestamp::kMicroSecondsPerSecond * kboot_time_ +
                      Timestamp::kMicroSecondsPerSecond * starttime /
                          kclock_ticks_per_second_);
   }
 
-  double get_seconds(long ticks)
+  double get_seconds(long ticks) const
   {
     return static_cast<double>(ticks) / kclock_ticks_per_second_;
   }
 
-  long get_long(const string &status, const char *key)
+  long get_long(const string &status, const char *key) const
   {
     long result = 0;
     size_t pos = status.find(key);
@@ -274,7 +359,7 @@ public:
     return result;
   }
 
-  long get_boot_time()
+  long get_boot_time() const
   {
     string stat;
     FileUtil::readFile("/proc/stat", 65536, &stat);
@@ -285,11 +370,13 @@ private:
   const int kclock_ticks_per_second_;
   const int kb_per_page_;
   const long kboot_time_; // epoch time
+  const muduo::TimeZone beijing_;
 
   const pid_t pid_;
 
   const string procname_;
   const string hostname_;
+  const string cmd_line_;
 };
 
 int main(int argc, char *argv[])
