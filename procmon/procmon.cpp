@@ -4,6 +4,7 @@
 #include <streambuf>
 
 #include <boost/bind.hpp>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -24,11 +25,60 @@ using namespace muduo;
 using namespace muduo::net;
 using namespace Jinja2CppLight;
 
+struct StatData
+{
+  void parse(const char *start_at_state, int kb_per_page)
+  {
+    std::istringstream iss(start_at_state);
+
+    iss >> state;
+    iss >> ppid >> pgrp >> session >> tty_nr >> tpgid >> flags;
+    iss >> minflt >> cminflt >> majflt >> cmajflt;
+    iss >> utime >> stime >> cutime >> cstime;
+    iss >> priority >> nice >> num_threads >> itrealvalue >> starttime;
+    long vsize, rss;
+    iss >> vsize >> rss >> rsslim;
+    vsizeKb = vsize / 1024;
+    rssKb = rss * kb_per_page;
+  }
+
+  char state;
+  int ppid;
+  int pgrp;
+  int session;
+  int tty_nr;
+  int tpgid;
+  int flags;
+
+  long minflt;
+  long cminflt;
+  long majflt;
+  long cmajflt;
+
+  long utime;
+  long stime;
+  long cutime;
+  long cstime;
+
+  long priority;
+  long nice;
+  long num_threads;
+  long itrealvalue;
+  long starttime;
+
+  long vsizeKb;
+  long rssKb;
+  long rsslim;
+};
+
 class Procmon : boost::noncopyable
 {
 public:
   Procmon(pid_t pid)
-      : pid_(pid),
+      : kclock_ticks_per_second_(muduo::ProcessInfo::clockTicksPerSecond()),
+        kb_per_page_(muduo::ProcessInfo::pageSize() / 1024),
+        kboot_time_(get_boot_time()), // epoch time
+        pid_(pid),                    // pid
         procname_(ProcessInfo::procname(read_proc_file("stat")).as_string()),
         hostname_(ProcessInfo::hostname())
   {
@@ -104,11 +154,12 @@ public:
       string str((std::istreambuf_iterator<char>(ifs)),
                  std::istreambuf_iterator<char>());
 
-      Template t(str.c_str());
-      t.setValue("procname", procname_.c_str());
-      t.setValue("hostname", hostname_.c_str());
-      t.setValue("pid", boost::lexical_cast<string>(pid_).c_str());
-      resp->set_body(t.render().c_str());
+      Template t(str);
+      t.setValue("procname", procname_);
+      t.setValue("hostname", hostname_);
+      t.setValue("pid", std::to_string(pid_));
+
+      resp->set_body(t.render());
       return;
     }
 
@@ -120,15 +171,56 @@ public:
     std::ifstream ifs("procmondocs/procmon.html");
     string str((std::istreambuf_iterator<char>(ifs)),
                std::istreambuf_iterator<char>());
-    Template t(str.c_str());
-    t.setValue("procname", procname_.c_str());
-    t.setValue("hostname", hostname_.c_str());
-    t.setValue("nowtime", now.toFormattedString().c_str());
-    t.setValue("pid", boost::lexical_cast<string>(pid_).c_str());
+    Template t(str);
+    t.setValue("procname", procname_);
+    t.setValue("hostname", hostname_);
+    t.setValue("nowtime", now.toFormattedString());
+    t.setValue("pid", std::to_string(pid_));
 
-    // Timestamp started(getStartTime(statData.starttime));
+    StatData stat_data;
+    bzero(&stat_data, sizeof(stat_data));
+    StringPiece procname = ProcessInfo::procname(stat);
+    assert(*procname.end() == ')');
 
-    // t.setValue("start_time", );
+    stat_data.parse(procname.end() + 1, kb_per_page_);
+    Timestamp started(get_start_time(stat_data.starttime));
+    t.setValue("start_time", started.toFormattedString(false));
+    t.setValue("uptimes", format_double(timeDifference(now, started)));
+    t.setValue("ececuable", read_link("exe"));
+    t.setValue("current_dir", read_link("cwd"));
+    t.setValue("state", get_state(stat_data.state));
+    t.setValue("user_time", format_double(get_seconds(stat_data.utime)));
+    t.setValue("system_time", format_double(get_seconds(stat_data.stime)));
+    t.setValue("vm_size", std::to_string(stat_data.vsizeKb));
+    t.setValue("vm_rss", std::to_string(stat_data.rssKb));
+    t.setValue("threads", std::to_string(stat_data.num_threads));
+    t.setValue("priority", std::to_string(stat_data.priority));
+    t.setValue("nice", std::to_string(stat_data.nice));
+    t.setValue("minor_page_faults", std::to_string(stat_data.minflt));
+    t.setValue("major_page_faults", std::to_string(stat_data.majflt));
+    resp->set_body(t.render());
+  }
+
+  string format_double(double val)
+  {
+    return boost::str(boost::format("%.2f") % val);
+  }
+
+  const char *get_state(char state)
+  {
+    switch (state)
+    {
+    case 'R':
+      return "Running";
+    case 'S':
+      return "Sleeping";
+    case 'D':
+      return "Disk sleep";
+    case 'Z':
+      return "Zombie";
+    default:
+      return "Unknown";
+    }
   }
 
   string read_proc_file(const char *basename)
@@ -155,7 +247,45 @@ public:
     return result;
   }
 
+  // starttime = /porc/pid/stat starttime
+  // 应该是进程启动到现在的tick数量
+  // 需要转换成second
+  // 返回启动时间的epoch time
+  Timestamp get_start_time(long starttime)
+  {
+    return Timestamp(Timestamp::kMicroSecondsPerSecond * kboot_time_ +
+                     Timestamp::kMicroSecondsPerSecond * starttime /
+                         kclock_ticks_per_second_);
+  }
+
+  double get_seconds(long ticks)
+  {
+    return static_cast<double>(ticks) / kclock_ticks_per_second_;
+  }
+
+  long get_long(const string &status, const char *key)
+  {
+    long result = 0;
+    size_t pos = status.find(key);
+    if (pos != string::npos)
+    {
+      result = atol(status.c_str() + pos + strlen(key));
+    }
+    return result;
+  }
+
+  long get_boot_time()
+  {
+    string stat;
+    FileUtil::readFile("/proc/stat", 65536, &stat);
+    return get_long(stat, "btime ");
+  }
+
 private:
+  const int kclock_ticks_per_second_;
+  const int kb_per_page_;
+  const long kboot_time_; // epoch time
+
   const pid_t pid_;
 
   const string procname_;
@@ -179,6 +309,7 @@ int main(int argc, char *argv[])
   LOG_INFO << "listening on port = " << port;
 
   Procmon procmon(pid);
+
   EventLoop loop;
   TcpServer tcp_server(&loop, InetAddress(port), "procmon");
 

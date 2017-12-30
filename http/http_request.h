@@ -35,7 +35,7 @@ public:
 
   bool set_method(const char *start, const char *end)
   {
-    std::string m(start, end);
+    string m(start, end);
     if (m == "GET")
     {
       method_ = kGet;
@@ -66,7 +66,7 @@ public:
 
   Method method() const { return method_; }
 
-  std::string method_str() const
+  string method_str() const
   {
     if (method_ == kGet)
     {
@@ -101,18 +101,18 @@ public:
     path_.assign(start, end);
   }
 
-  const std::string &path() const { return path_; }
+  const string &path() const { return path_; }
 
   void set_query(const char *start, const char *end)
   {
     query_.assign(start, end);
   }
 
-  const std::string &query() const { return query_; }
+  const string &query() const { return query_; }
 
   void add_header(const char *start, const char *colon, const char *end)
   {
-    std::string field(start, colon);
+    string field(start, colon);
 
     colon++;
     while (colon < end && isspace(*colon))
@@ -120,7 +120,7 @@ public:
       ++colon;
     }
 
-    std::string value(colon, end);
+    string value(colon, end);
     while (!value.empty() && isspace(value[value.size() - 1]))
     {
       value.resize(value.size() - 1);
@@ -128,9 +128,9 @@ public:
     headers_[field] = value;
   }
 
-  std::string get_header(const std::string &field) const
+  string get_header(const string &field) const
   {
-    std::string result;
+    string result;
     auto it = headers_.find(field);
     if (it != headers_.end())
     {
@@ -165,15 +165,15 @@ public:
     return expect_body_len - current_body_len;
   }
 
-  void append_body(const std::string &body) { body_.append(body); }
+  void append_body(const string &body) { body_.append(body); }
 
-  const std::string &body() const { return body_; }
+  const string &body() const { return body_; }
 
 private:
   Method method_;
-  std::string path_;
-  std::string query_;
-  std::string body_;
+  string path_;
+  string query_;
+  string body_;
   Version version_;
-  std::map<std::string, std::string> headers_;
+  std::map<string, string> headers_;
 };

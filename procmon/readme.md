@@ -2,8 +2,9 @@
 
 - [1. 简要](#1-简要)
 - [2. 用c++代码来拼接html?](#2-用c代码来拼接html)
-- [3. 库](#3-库)
-- [4. 调试](#4-调试)
+- [3. 进程信息](#3-进程信息)
+- [4. 库](#4-库)
+- [5. 调试](#5-调试)
 
 <!-- /TOC -->
 
@@ -45,8 +46,14 @@ jinja
 * http://www.swig.org/ (swig)
 * http://www.swig.org/Doc3.0/SWIGPlus.html#SWIGPlus (swig with c++)
 
-<a id="markdown-3-库" name="3-库"></a>
-# 3. 库
+<a id="markdown-3-进程信息" name="3-进程信息"></a>
+# 3. 进程信息
+
+* https://www.redhat.com/archives/axp-list/2001-January/msg00355.html (/proc/pid/stat 的说明)
+
+
+<a id="markdown-4-库" name="4-库"></a>
+# 4. 库
 
 ```bash
 
@@ -68,10 +75,13 @@ make install
 
 echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc
 
+# 我只能说fuck c++了, 一个string搞那么多版本,根本就不好去学习.
+# typedef __gnu_cxx::__sso_string string; 你用这个实现 怎么和别人的库兼容?????写点小东西验证想法,烦死了
+
 ```
 
-<a id="markdown-4-调试" name="4-调试"></a>
-# 4. 调试
+<a id="markdown-5-调试" name="5-调试"></a>
+# 5. 调试
 
 ```
 cgdb procmon -ex 'set args 1 80' -ex 'b Procmon::fill_over_fiew' -ex 'r'

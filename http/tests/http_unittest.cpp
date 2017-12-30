@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(test_http_context_first_line)
 {
   HttpContext http_context;
 
-  std::string s = "GET /index.html HTTP/1.1\r\n";
+  string s = "GET /index.html HTTP/1.1\r\n";
   BOOST_CHECK(
       http_context.parse_first_line(s.c_str(), s.c_str() + s.length() - 2));
 
@@ -65,42 +65,40 @@ BOOST_AUTO_TEST_CASE(test_http_context_all_value)
   BOOST_CHECK(context.got_all());
   const auto &request = context.request();
   BOOST_CHECK_EQUAL(request.method(), HttpRequest::kGet);
-  BOOST_CHECK_EQUAL(request.path(), std::string("/index.html"));
+  BOOST_CHECK_EQUAL(request.path(), string("/index.html"));
   BOOST_CHECK_EQUAL(request.version(), HttpRequest::kHttp11);
-  BOOST_CHECK_EQUAL(request.get_header("Host"),
-                    std::string("www.chenshuo.com"));
-  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), std::string(""));
+  BOOST_CHECK_EQUAL(request.get_header("Host"), string("www.chenshuo.com"));
+  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), string(""));
 }
 
 BOOST_AUTO_TEST_CASE(test_http_context_onebyone)
 {
   // 一个一个字节来
-  std::string all("GET /index.html HTTP/1.1\r\n"
-                  "Host: www.chenshuo.com\r\n"
-                  "\r\n");
+  string all("GET /index.html HTTP/1.1\r\n"
+             "Host: www.chenshuo.com\r\n"
+             "\r\n");
   Buffer input;
   HttpContext context;
   for (auto &s : all)
   {
-    input.append(std::string(1, s));
+    input.append(string(1, s));
     BOOST_CHECK(context.parse_request(&input));
   }
   BOOST_CHECK(context.got_all());
   const auto &request = context.request();
   BOOST_CHECK_EQUAL(request.method(), HttpRequest::kGet);
-  BOOST_CHECK_EQUAL(request.path(), std::string("/index.html"));
+  BOOST_CHECK_EQUAL(request.path(), string("/index.html"));
   BOOST_CHECK_EQUAL(request.version(), HttpRequest::kHttp11);
-  BOOST_CHECK_EQUAL(request.get_header("Host"),
-                    std::string("www.chenshuo.com"));
-  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), std::string(""));
+  BOOST_CHECK_EQUAL(request.get_header("Host"), string("www.chenshuo.com"));
+  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), string(""));
 }
 
 BOOST_AUTO_TEST_CASE(test_http_context_two_piece)
 {
   // 分成两部分
-  std::string all("GET /index.html HTTP/1.1\r\n"
-                  "Host: www.chenshuo.com\r\n"
-                  "\r\n");
+  string all("GET /index.html HTTP/1.1\r\n"
+             "Host: www.chenshuo.com\r\n"
+             "\r\n");
 
   for (size_t sz1 = 0; sz1 < all.size(); ++sz1)
   {
@@ -114,11 +112,10 @@ BOOST_AUTO_TEST_CASE(test_http_context_two_piece)
     BOOST_CHECK(context.got_all());
     const auto &request = context.request();
     BOOST_CHECK_EQUAL(request.method(), HttpRequest::kGet);
-    BOOST_CHECK_EQUAL(request.path(), std::string("/index.html"));
+    BOOST_CHECK_EQUAL(request.path(), string("/index.html"));
     BOOST_CHECK_EQUAL(request.version(), HttpRequest::kHttp11);
-    BOOST_CHECK_EQUAL(request.get_header("Host"),
-                      std::string("www.chenshuo.com"));
-    BOOST_CHECK_EQUAL(request.get_header("User-Agent"), std::string(""));
+    BOOST_CHECK_EQUAL(request.get_header("Host"), string("www.chenshuo.com"));
+    BOOST_CHECK_EQUAL(request.get_header("User-Agent"), string(""));
   }
 }
 
@@ -138,12 +135,11 @@ BOOST_AUTO_TEST_CASE(test_http_context_empyt_header_value)
 
   const auto &request = context.request();
   BOOST_CHECK_EQUAL(request.method(), HttpRequest::kGet);
-  BOOST_CHECK_EQUAL(request.path(), std::string("/index.html"));
+  BOOST_CHECK_EQUAL(request.path(), string("/index.html"));
   BOOST_CHECK_EQUAL(request.version(), HttpRequest::kHttp11);
-  BOOST_CHECK_EQUAL(request.get_header("Host"),
-                    std::string("www.chenshuo.com"));
-  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), std::string(""));
-  BOOST_CHECK_EQUAL(request.get_header("Accept-Encoding"), std::string(""));
+  BOOST_CHECK_EQUAL(request.get_header("Host"), string("www.chenshuo.com"));
+  BOOST_CHECK_EQUAL(request.get_header("User-Agent"), string(""));
+  BOOST_CHECK_EQUAL(request.get_header("Accept-Encoding"), string(""));
 }
 
 BOOST_AUTO_TEST_CASE(test_http_context_body_simple)
@@ -176,7 +172,7 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_simple)
   BOOST_CHECK(context.got_all());
   BOOST_CHECK_EQUAL(request.body().size(), 10);
   BOOST_CHECK_EQUAL(request.get_remain_body_len(), 0);
-  BOOST_CHECK_EQUAL(request.body(), std::string("color=blue"));
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
 }
 
 BOOST_AUTO_TEST_CASE(test_http_context_body_one_by_one)
@@ -191,11 +187,11 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_one_by_one)
   BOOST_CHECK(context.parse_request(&input));
   BOOST_CHECK(!context.got_all());
 
-  std::string tmp = "color=blue";
+  string tmp = "color=blue";
 
   for (auto &v : tmp)
   {
-    input.append(std::string(1, v));
+    input.append(string(1, v));
     BOOST_CHECK(context.parse_request(&input));
   }
 
@@ -203,7 +199,7 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_one_by_one)
   const auto &request = context.request();
   BOOST_CHECK_EQUAL(request.body().size(), 10);
   BOOST_CHECK_EQUAL(request.get_remain_body_len(), 0);
-  BOOST_CHECK_EQUAL(request.body(), std::string("color=blue"));
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
 }
 
 BOOST_AUTO_TEST_CASE(test_http_context_body_more)
@@ -221,12 +217,12 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_more)
 
   BOOST_CHECK_EQUAL(input.readableBytes(), 0);
 
-  std::string next_str = std::string("blue"
-                                     "POST /color.cgi HTTP/1.1\r\n"
-                                     "Connection: keep-alive\r\n"
-                                     "Content-Length: 10\r\n"
-                                     "\r\n"
-                                     "color=blue\r\n");
+  string next_str = string("blue"
+                           "POST /color.cgi HTTP/1.1\r\n"
+                           "Connection: keep-alive\r\n"
+                           "Content-Length: 10\r\n"
+                           "\r\n"
+                           "color=blue\r\n");
   input.append(next_str);
 
   BOOST_CHECK(context.parse_request(&input));
@@ -239,7 +235,7 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_more)
   BOOST_CHECK(context.parse_request(&input));
   BOOST_CHECK_EQUAL(input.readableBytes(), next_str.size() - 4);
   const auto &request = context.request();
-  BOOST_CHECK_EQUAL(request.body(), std::string("color=blue"));
+  BOOST_CHECK_EQUAL(request.body(), string("color=blue"));
 
   // 解析剩余的下一个串
   context.reset();
@@ -249,7 +245,7 @@ BOOST_AUTO_TEST_CASE(test_http_context_body_more)
   BOOST_CHECK_EQUAL(input.readableBytes(), 2);
   BOOST_CHECK_EQUAL(request2.body().size(), 10);
   BOOST_CHECK_EQUAL(request2.get_remain_body_len(), 0);
-  BOOST_CHECK_EQUAL(request2.body(), std::string("color=blue"));
+  BOOST_CHECK_EQUAL(request2.body(), string("color=blue"));
 
   // 剩余的\r\n
   context.reset();

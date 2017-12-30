@@ -1,7 +1,5 @@
 #include <http/http_context.h>
 
-#include <string>
-
 #include <boost/lexical_cast.hpp>
 
 #include <muduo/base/Logging.h>
@@ -133,14 +131,14 @@ bool HttpContext::parse_request(muduo::net::Buffer *buf)
 
       if (static_cast<ssize_t>(buf->readableBytes()) > remain_body_len)
       {
-        request_.append_body(std::string(buf->peek(), remain_body_len));
+        request_.append_body(string(buf->peek(), remain_body_len));
         buf->retrieve(remain_body_len);
 
         assert(request_.get_remain_body_len() == 0);
       }
       else
       {
-        request_.append_body(std::string(buf->peek(), buf->readableBytes()));
+        request_.append_body(string(buf->peek(), buf->readableBytes()));
         buf->retrieveAll();
       }
 

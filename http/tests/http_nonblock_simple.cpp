@@ -36,7 +36,7 @@ void on_message(const TcpConnectionPtr &conn, Buffer *buf,
   {
     const auto &request = context->request();
 
-    const std::string &connection = request.get_header("Connection");
+    const string &connection = request.get_header("Connection");
     bool close =
         connection == "close" || (request.version() == HttpRequest::kHttp10 &&
                                   connection != "Keep-Alive");

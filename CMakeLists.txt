@@ -18,6 +18,7 @@ set(CXX_FLAGS
  -Wall
  -Wextra
  -Wno-unused-parameter
+ -DMUDUO_STD_STRING
 )
 
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")

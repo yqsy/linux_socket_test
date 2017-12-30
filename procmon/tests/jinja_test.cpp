@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   muduo::TimeZone beijing(8 * 3600, "CST");
   muduo::Logger::setTimeZone(beijing);
 
-  // const std::string source = ("Hello {{name}}!"
+  // const string source = ("Hello {{name}}!"
   //                             ""
   //                             "{% if test %}"
   //                             "    How are you?"
