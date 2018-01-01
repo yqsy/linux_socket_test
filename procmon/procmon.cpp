@@ -201,7 +201,7 @@ public:
 
       // generate png
       // resp.set_body();
-      resp.set_content_type("image/png");
+      resp->set_content_type("image/png");
     }
     else
     {

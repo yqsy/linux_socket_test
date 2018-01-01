@@ -55,6 +55,8 @@ jinja
 <a id="markdown-4-库" name="4-库"></a>
 # 4. 库
 
+* https://libgd.github.io/manuals/2.2.4/files/gd-c.html
+
 ```bash
 
 # 画图

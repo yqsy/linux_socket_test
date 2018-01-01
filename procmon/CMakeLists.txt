@@ -6,3 +6,6 @@ target_link_libraries(jinja_test Jinja2CppLight muduo_base_cpp11 muduo_net_cpp11
 
 add_executable(circular_buf_test tests/circular_buf_test.cpp)
 target_link_libraries(circular_buf_test)
+
+add_executable(plot_test tests/plot_test.cpp)
+target_link_libraries(plot_test gd)
