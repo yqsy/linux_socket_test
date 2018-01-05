@@ -3,8 +3,9 @@
 - [1. 简要](#1-简要)
 - [2. 用c++代码来拼接html?](#2-用c代码来拼接html)
 - [3. 进程信息](#3-进程信息)
-- [4. 库](#4-库)
-- [5. 调试](#5-调试)
+- [4. 我自己的分析](#4-我自己的分析)
+- [5. 库](#5-库)
+- [6. 调试](#6-调试)
 
 <!-- /TOC -->
 
@@ -51,9 +52,29 @@ jinja
 
 * https://www.redhat.com/archives/axp-list/2001-January/msg00355.html (/proc/pid/stat 的说明)
 
+<a id="markdown-4-我自己的分析" name="4-我自己的分析"></a>
+# 4. 我自己的分析
 
-<a id="markdown-4-库" name="4-库"></a>
-# 4. 库
+开源的如下,问题就是太重量级了.一堆数据,颜色摆在你的面前,你都不知道如何去取舍(关键是懂得东西太少了,不知道如何从大量的数据中提取关键的信息)
+* https://london.my-netdata.io/default.html#menu_system_submenu_swap;theme=slate;help=true
+
+我觉得有必要自己来做个简单的,应用级别的http监控服务.因为开源的都是通用的,如果为了适应开源监控组件,而去强制监控的接口.到了换监控组件的时候该怎么办呢?  
+况且我只想要一个简易的(自己做一些简单的应用).http或telnet或rpc接口.
+
+监控信息如下:
+* cpu
+* 磁盘I/O
+* 网络I/O
+* 内存
+* 轻量级业务信息
+
+时间维度:
+* 过去24小时
+* 过去7天
+* 过去一个月
+
+<a id="markdown-5-库" name="5-库"></a>
+# 5. 库
 
 * https://libgd.github.io/manuals/2.2.4/files/gd-c.html
 
@@ -82,8 +103,8 @@ echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc
 
 ```
 
-<a id="markdown-5-调试" name="5-调试"></a>
-# 5. 调试
+<a id="markdown-6-调试" name="6-调试"></a>
+# 6. 调试
 
 ```
 cgdb procmon -ex 'set args 1 80' -ex 'b Procmon::fill_over_fiew' -ex 'r'
