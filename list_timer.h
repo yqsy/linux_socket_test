@@ -28,7 +28,7 @@ public:
   util_timer() : prev(NULL), next(NULL) {}
 
 public:
-  time_t expire; /*任务的超时时间，这里使用绝对时间*/
+  time_t expire;                  /*任务的超时时间，这里使用绝对时间*/
   void (*cb_func)(client_data *); /*任务回调函数*/
   /*回调函数处理的客户数据，由定时器的执行者传递给回调函数*/
   client_data *user_data;

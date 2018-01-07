@@ -9,3 +9,6 @@ target_link_libraries(circular_buf_test)
 
 add_executable(plot_test tests/plot_test.cpp)
 target_link_libraries(plot_test gd)
+
+add_executable(plot_test2 tests/plot_test2.cpp)
+target_link_libraries(plot_test2 gd)
