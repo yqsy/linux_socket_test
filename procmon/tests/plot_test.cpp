@@ -67,19 +67,15 @@ int main()
 
   // 画max value
   auto black = gdImageColorAllocate(image, 0, 0, 0);
-  gdImageString(image, font, width - right_margin, marginy,
-                reinterpret_cast<unsigned char *>(buf), black);
+  gdImageString(image, font, width - right_margin, marginy, reinterpret_cast<unsigned char *>(buf), black);
 
   // 画最新的时间 0s
   snprintf(buf, sizeof(buf), "0");
-  gdImageString(image, font, width - right_margin,
-                height - marginy - font_height,
-                reinterpret_cast<unsigned char *>(buf), black);
+  gdImageString(image, font, width - right_margin, height - marginy - font_height, reinterpret_cast<unsigned char *>(buf), black);
 
   // 画最起始的时间
   snprintf(buf, sizeof(buf), "-%ds", total_seconds);
-  gdImageString(image, font, left_margin, height - marginy - font_height,
-                reinterpret_cast<unsigned char *>(buf), black);
+  gdImageString(image, font, left_margin, height - marginy - font_height, reinterpret_cast<unsigned char *>(buf), black);
 
   // 画线(把每个点连起来)
   for (size_t i = 0; i < cpu_doubles.size() - 1; ++i)

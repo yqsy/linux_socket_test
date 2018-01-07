@@ -5,7 +5,8 @@
 - [3. 进程信息](#3-进程信息)
 - [4. 我自己的分析](#4-我自己的分析)
 - [5. 库](#5-库)
-- [6. 调试](#6-调试)
+- [6. 抗锯齿](#6-抗锯齿)
+- [7. 调试](#7-调试)
 
 <!-- /TOC -->
 
@@ -77,6 +78,7 @@ jinja
 # 5. 库
 
 * https://libgd.github.io/manuals/2.2.4/files/gd-c.html
+* https://www.zhihu.com/question/21222208/answer/17604137 (js画图库)
 
 ```bash
 
@@ -103,8 +105,16 @@ echo 'export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"' >> ~/.bashrc
 
 ```
 
-<a id="markdown-6-调试" name="6-调试"></a>
-# 6. 调试
+<a id="markdown-6-抗锯齿" name="6-抗锯齿"></a>
+# 6. 抗锯齿
+
+libgd 生成的图片有锯齿
+
+* https://www.zhihu.com/question/65195520/answer/228487516
+
+
+<a id="markdown-7-调试" name="7-调试"></a>
+# 7. 调试
 
 ```
 cgdb procmon -ex 'set args 1 80' -ex 'b Procmon::fill_over_fiew' -ex 'r'
