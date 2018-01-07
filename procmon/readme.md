@@ -7,6 +7,7 @@
 - [5. 库](#5-库)
 - [6. 抗锯齿](#6-抗锯齿)
 - [7. 调试](#7-调试)
+- [benchmark](#benchmark)
 
 <!-- /TOC -->
 
@@ -61,7 +62,8 @@ jinja
 
 我觉得有必要自己来做个简单的,应用级别的http监控服务.因为开源的都是通用的,如果为了适应开源监控组件,而去强制监控的接口.到了换监控组件的时候该怎么办呢?  
 况且我只想要一个简易的(自己做一些简单的应用).http或telnet或rpc接口.  
-我觉的还是用js有前途一些,c/c++去画图标太复杂了
+我觉的还是用js有前途一些,c/c++去画图标太复杂了  
+或者研究一下vps厂商的画法  
 
 监控信息如下:
 * cpu
@@ -119,4 +121,29 @@ libgd 生成的图片有锯齿
 
 ```
 cgdb procmon -ex 'set args 1 80' -ex 'b Procmon::fill_over_fiew' -ex 'r'
+```
+
+<a id="markdown-benchmark" name="benchmark"></a>
+# benchmark
+
+```
+# 长连接
+ab -k -n 100000 http://localhost:80/
+
+# 短连接
+ab -n 100000 http://localhost:80/
+
+# 测试图片
+ab -k -n 10000 http://localhost:80/cpu.png
+
+
+# muduo的
+Requests per second:    9706.50 [#/sec] (mean)
+
+# 我的(jinja)
+Requests per second:    2950.52 [#/sec] (mean)
+
+# 我的(jinjia + cpu)
+Requests per second:    946.16 [#/sec] (mean)
+
 ```
