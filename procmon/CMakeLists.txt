@@ -1,5 +1,5 @@
-add_executable(procmon procmon.cpp)
-target_link_libraries(procmon httplight Jinja2CppLight muduo_base_cpp11 muduo_net_cpp11 pthread)
+add_executable(procmon procmon.cpp plot.cc)
+target_link_libraries(procmon httplight Jinja2CppLight muduo_base_cpp11 muduo_net_cpp11 pthread gd)
 
 add_executable(jinja_test tests/jinja_test.cpp)
 target_link_libraries(jinja_test Jinja2CppLight muduo_base_cpp11 muduo_net_cpp11 pthread)

@@ -35,13 +35,22 @@ std::vector<double> gen_doubles(int num)
   return r0;
 }
 
-bool are_same(double a, double b) { return std::fabs(a - b) < std::numeric_limits<double>::epsilon(); }
+bool are_same(double a, double b)
+{
+  return std::fabs(a - b) < std::numeric_limits<double>::epsilon();
+}
 
 // 精确到十分位
-std::string format_double(double d) { return boost::str(boost::format("%.1f") % d); }
+std::string format_double(double d)
+{
+  return boost::str(boost::format("%.1f") % d);
+}
 
 // 精确到百分位
-std::string format_double2(double d) { return boost::str(boost::format("%.2f") % d); }
+std::string format_double2(double d)
+{
+  return boost::str(boost::format("%.2f") % d);
+}
 
 // round up 十分位
 double round_up_tenths(double d) { return ceil(d * 10.0) / 10.0; }
@@ -126,7 +135,8 @@ int main(int argc, char *argv[])
   std::cout << "max: " << format_double2(get_max(doubles)) << std::endl;
 
   // round up 靠近0.0或者0.5
-  std::cout << "round up max: " << format_double(round_up_half(get_max(doubles))) << std::endl;
+  std::cout << "round up max: "
+            << format_double(round_up_half(get_max(doubles))) << std::endl;
 
   auto max = std::max(1.0, round_up_half(get_max(doubles)));
 
@@ -148,12 +158,14 @@ int main(int argc, char *argv[])
   // 递增画上时间点
   // 考虑到点可能不会充足,所以从左至右画时要加上补填的长度
   std::vector<double> x_collections;
-  double draw_points_len = ((double)y_collections.size() / (double)max_points) * (double)width;
+  double draw_points_len =
+      ((double)y_collections.size() / (double)max_points) * (double)width;
   double fill_points_len = width - draw_points_len;
 
   for (size_t i = 0; i < y_collections.size(); ++i)
   {
-    double x = margin / 2 + fill_points_len + draw_points_len * ((double)i / (double)y_collections.size());
+    double x = margin / 2 + fill_points_len +
+               draw_points_len * ((double)i / (double)y_collections.size());
     x_collections.push_back(x);
   }
   assert(y_collections.size() == x_collections.size());
@@ -161,7 +173,8 @@ int main(int argc, char *argv[])
   gdImagePtr image = gdImageCreate(width, height);
 
   // 背景灰色线
-  // const int background_line_color = gdImageColorAllocate(image, 230, 233, 235);
+  // const int background_line_color = gdImageColorAllocate(image, 230, 233,
+  // 235);
 
   // 背景白色线
   const int background_color = gdImageColorAllocate(image, 255, 255, 255);

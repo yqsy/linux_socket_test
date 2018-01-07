@@ -60,7 +60,8 @@ jinja
 * https://london.my-netdata.io/default.html#menu_system_submenu_swap;theme=slate;help=true
 
 我觉得有必要自己来做个简单的,应用级别的http监控服务.因为开源的都是通用的,如果为了适应开源监控组件,而去强制监控的接口.到了换监控组件的时候该怎么办呢?  
-况且我只想要一个简易的(自己做一些简单的应用).http或telnet或rpc接口.
+况且我只想要一个简易的(自己做一些简单的应用).http或telnet或rpc接口.  
+我觉的还是用js有前途一些,c/c++去画图标太复杂了
 
 监控信息如下:
 * cpu

@@ -25,6 +25,8 @@
 #include <http/http_request.h>
 #include <http/http_response.h>
 
+#include <procmon/plot.h>
+
 using namespace muduo;
 using namespace muduo::net;
 using namespace Jinja2CppLight;
@@ -96,7 +98,8 @@ public:
         beijing_(8 * 3600, "CST"), pid_(pid),
         procname_(ProcessInfo::procname(read_proc_file("stat")).as_string()),
         hostname_(ProcessInfo::hostname()), cmd_line_(get_cmd_line()),
-        ticks_(0), cpu_usage_(600 / kperiod_) // 10 minutes
+        ticks_(0), cpu_usage_(600 / kperiod_),
+        cpu_chart_(640, 100, 600, kperiod_) // 10 minutes
   {
     bzero(&last_stat_data_, sizeof(last_stat_data_));
   }
@@ -199,8 +202,8 @@ public:
             cpu_usage_[i].cpu_usage(kperiod_, kclock_ticks_per_second_));
       }
 
-      // generate png
-      // resp.set_body();
+      string png = cpu_chart_.plotCpu(cpu_usage);
+      resp->set_body(png);
       resp->set_content_type("image/png");
     }
     else
@@ -440,6 +443,7 @@ private:
   StatData last_stat_data_;
   int ticks_; // 记录两次间隔之内的cpu使用率
   boost::circular_buffer<CpuTime> cpu_usage_; // 10分钟内cpu统计
+  Plot cpu_chart_;
 };
 
 int main(int argc, char *argv[])
