@@ -6,10 +6,17 @@
 using namespace muduo;
 using namespace muduo::net;
 
-int main()
+uint16_t INSPECT_PORT = 11212;
+
+int main(int argc, char *argv[])
 {
   EventLoop loop;
-  EventLoopThread t;
-  Inspector ins(t.startLoop(), InetAddress(12345), "test");
+  EventLoopThread inspectThread;
+
+  new Inspector(inspectThread.startLoop(), InetAddress(INSPECT_PORT),
+                "memcached-muduo");
+
   loop.loop();
+
+  return 0;
 }
