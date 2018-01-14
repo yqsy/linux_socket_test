@@ -81,3 +81,5 @@ add_subdirectory(procmon)
 
 #add_subdirectory(ptrtest)
 #add_subdirectory(gprof_test)
+
+#add_subdirectory(memcached/server)
