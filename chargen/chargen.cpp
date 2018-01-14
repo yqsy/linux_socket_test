@@ -3,7 +3,7 @@
 #include <muduo/base/Logging.h>
 #include <muduo/net/EventLoop.h>
 
-#include <boost/bind.hpp>
+#include <functional>
 #include <stdio.h>
 
 using namespace muduo;
@@ -15,16 +15,16 @@ ChargenServer::ChargenServer(EventLoop *loop, const InetAddress &listenAddr,
       startTime_(Timestamp::now())
 {
   server_.setConnectionCallback(
-      boost::bind(&ChargenServer::onConnection, this, _1));
+      std::bind(&ChargenServer::onConnection, this, _1));
 
   server_.setMessageCallback(
-      boost::bind(&ChargenServer::onMessage, this, _1, _2, _3));
+      std::bind(&ChargenServer::onMessage, this, _1, _2, _3));
 
   server_.setWriteCompleteCallback(
-      boost::bind(&ChargenServer::onWriteComplete, this, _1));
+      std::bind(&ChargenServer::onWriteComplete, this, _1));
   if (print)
   {
-    loop->runEvery(3.0, boost::bind(&ChargenServer::printThroughput, this));
+    loop->runEvery(3.0, std::bind(&ChargenServer::printThroughput, this));
   }
 
   string line;

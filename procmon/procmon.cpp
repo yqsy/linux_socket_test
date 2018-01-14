@@ -6,11 +6,11 @@
 #include <vector>
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/bind.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
+#include <functional>
 
 #include <muduo/base/FileUtil.h>
 #include <muduo/base/Logging.h>
@@ -468,13 +468,13 @@ int main(int argc, char *argv[])
   TcpServer tcp_server(&loop, InetAddress(port), "procmon");
 
   tcp_server.setConnectionCallback(
-      boost::bind(&Procmon::on_connection, &procmon, _1));
+      std::bind(&Procmon::on_connection, &procmon, _1));
 
   tcp_server.setMessageCallback(
-      boost::bind(&Procmon::on_message, &procmon, _1, _2, _3));
+      std::bind(&Procmon::on_message, &procmon, _1, _2, _3));
 
   tcp_server.getLoop()->runEvery(procmon.period(),
-                                 boost::bind(&Procmon::tick, &procmon));
+                                 std::bind(&Procmon::tick, &procmon));
   tcp_server.start();
   loop.loop();
 

@@ -7,7 +7,7 @@
 #include <http/http_request.h>
 #include <http/http_response.h>
 
-#include <boost/bind.hpp>
+#include <functional>
 
 using namespace muduo;
 using namespace muduo::net;
@@ -69,8 +69,8 @@ int main(int argc, char *argv[])
 
   EventLoop loop;
   TcpServer tcp_server(&loop, InetAddress(80), "helloworld");
-  tcp_server.setConnectionCallback(boost::bind(&on_connection, _1));
-  tcp_server.setMessageCallback(boost::bind(&on_message, _1, _2, _3));
+  tcp_server.setConnectionCallback(std::bind(&on_connection, _1));
+  tcp_server.setMessageCallback(std::bind(&on_message, _1, _2, _3));
   tcp_server.start();
   loop.loop();
   return 0;
