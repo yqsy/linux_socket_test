@@ -1,2 +1,2 @@
 add_executable(memcached server.cpp)
-target_link_libraries(memcached muduo_inspect muduo_base muduo_net muduo_http pthread)
+target_link_libraries(memcached muduo_inspect)
