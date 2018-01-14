@@ -96,4 +96,5 @@ message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_${BUILD_T
 #add_subdirectory(gprof_test)
 
 #add_subdirectory(memcached/server)
-add_subdirectory(test_lib)
+#add_subdirectory(test_lib)
+#add_subdirectory(test_lib2)
