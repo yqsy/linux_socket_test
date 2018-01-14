@@ -13,7 +13,7 @@ endif()
 
 
 set(CXX_FLAGS
- -std=c++11
+ -std=c++0x
  -g
  -Wall
  -Wextra

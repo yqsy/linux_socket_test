@@ -1,26 +1,15 @@
-#include <stdio.h>
+#include <muduo/net/inspect/Inspector.h>
 
 #include <muduo/net/EventLoop.h>
 #include <muduo/net/EventLoopThread.h>
-#include <muduo/net/inspect/Inspector.h>
 
-#include <muduo/base/Logging.h>
-#include <muduo/base/TimeZone.h>
+using namespace muduo;
+using namespace muduo::net;
 
-uint16_t INSPECT_PORT = 11212;
-
-int main(int argc, char *argv[])
+int main()
 {
-  muduo::TimeZone beijing(8 * 3600, "CST");
-  muduo::Logger::setTimeZone(beijing);
-
-  muduo::net::EventLoopThread inspectThread;
-
-  new muduo::net::Inspector(inspectThread.startLoop(),
-                            muduo::net::InetAddress(INSPECT_PORT),
-                            "memcached-muduo");
-
-  getchar();
-
-  return 0;
+  EventLoop loop;
+  EventLoopThread t;
+  Inspector ins(t.startLoop(), InetAddress(12345), "test");
+  loop.loop();
 }
