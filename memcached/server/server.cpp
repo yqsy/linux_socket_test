@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <unordered_set>
 
 #include <muduo/base/StringPiece.h>
 #include <muduo/net/EventLoop.h>
@@ -23,12 +24,15 @@ int THREADS = 4;
 // shared data
 class Item : boost::noncopyable
 {
+public:
   Item(StringPiece keyArg)
       : hash_(boost::hash_range(keyArg.begin(), keyArg.end()))
   {
   }
 
   size_t hash() const { return hash_; }
+
+  StringPiece key() const { return "key"; }
 
 private:
   size_t hash_;
@@ -49,10 +53,16 @@ struct Equal
   }
 };
 
+typedef std::unordered_set<ConstItemPtr, Hash, Equal> ItemMap;
+
 struct MapWithLock
 {
   std::mutex mtx;
+  ItemMap items;
 };
+
+const int kShards = 4096;
+std::array<MapWithLock, kShards> shareds;
 
 int main(int argc, char *argv[])
 {
