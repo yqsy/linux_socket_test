@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
     printf("usage:%s ip_address port_number backlog\n", basename(argv[0]));
     return 1;
   }
+
   const char *ip = argv[1];
   int port = atoi(argv[2]);
   int backlog = atoi(argv[3]);

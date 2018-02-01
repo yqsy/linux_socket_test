@@ -71,12 +71,12 @@ int main(int argc, char *argv[])
   new Inspector(inspectThread.startLoop(), InetAddress(INSPECT_PORT),
                 "inspect");
 
-  // EventLoop loop;
-  // TcpServer server(&loop, InetAddress(MEMCACHED_PORT), "memcached-muduo");
-  // server.setThreadNum(THREADS);
-  // server.start();
+  EventLoop loop;
+  TcpServer server(&loop, InetAddress(MEMCACHED_PORT), "memcached-muduo");
+  server.setThreadNum(THREADS);
+  server.start();
 
-  // loop.loop();
+  loop.loop();
 
   return 0;
 }
